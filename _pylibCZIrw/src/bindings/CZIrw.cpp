@@ -1,5 +1,6 @@
 #include "../api/CZIreadAPI.h"
 #include "../api/CZIwriteAPI.h"
+#include "../api/CZIeditAPI.h"
 #include "../api/PImage.h"
 #include "../api/ReaderOptions.h"
 #include "../api/SubBlockCache.h"
@@ -233,6 +234,113 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
       .def_readwrite("enableVisibilityCheckOptimization",
                      &ReaderOptions::enableVisibilityCheckOptimization)
       .def("Clear", &ReaderOptions::Clear);
+
+  // PyCZIMetadataBuilder bindings (Python-facing wrapper)
+  py::class_<PyCZIMetadataBuilder, std::shared_ptr<PyCZIMetadataBuilder>>(
+      m, "CziMetadataBuilder", py::module_local())
+      .def("get_xml", &PyCZIMetadataBuilder::GetXml, py::arg("prettify") = false,
+           "Get the current XML representation of the metadata")
+      .def("set_xml", &PyCZIMetadataBuilder::SetXml, py::arg("xml_string"),
+           "Replace the entire metadata XML content")
+      .def("set_general_document_info", 
+           [](PyCZIMetadataBuilder& self, 
+              const std::optional<std::wstring>& name,
+              const std::optional<std::wstring>& title,
+              const std::optional<std::wstring>& userName,
+              const std::optional<std::wstring>& description,
+              const std::optional<std::wstring>& comment,
+              const std::optional<std::wstring>& keywords,
+              const std::optional<double>& rating) {
+               libCZI::GeneralDocumentInfo info;
+               if (name) info.SetName(*name);
+               if (title) info.SetTitle(*title);
+               if (userName) info.SetUserName(*userName);
+               if (description) info.SetDescription(*description);
+               if (comment) info.SetComment(*comment);
+               if (keywords) info.SetKeywords(*keywords);
+               if (rating) info.SetRating(*rating);
+               self.SetGeneralDocumentInfo(info);
+           },
+           py::arg("name") = py::none(),
+           py::arg("title") = py::none(),
+           py::arg("user_name") = py::none(),
+           py::arg("description") = py::none(),
+           py::arg("comment") = py::none(),
+           py::arg("keywords") = py::none(),
+           py::arg("rating") = py::none(),
+           "Set general document information fields")
+      .def("set_scaling_info",
+           [](PyCZIMetadataBuilder& self,
+              const std::optional<double>& scale_x,
+              const std::optional<double>& scale_y,
+              const std::optional<double>& scale_z) {
+               libCZI::ScalingInfo info;
+               if (scale_x) info.scaleX = *scale_x;
+               if (scale_y) info.scaleY = *scale_y;
+               if (scale_z) info.scaleZ = *scale_z;
+               self.SetScalingInfo(info);
+           },
+           py::arg("scale_x") = py::none(),
+           py::arg("scale_y") = py::none(),
+           py::arg("scale_z") = py::none(),
+           "Set scaling information (pixel size in meters)")
+      .def("set_custom_key_value", &PyCZIMetadataBuilder::SetCustomKeyValue,
+           py::arg("key"), py::arg("value"),
+           "Set or add a custom key-value pair")
+      .def("set_display_settings", &PyCZIMetadataBuilder::SetDisplaySettings,
+           py::arg("display_settings"),
+           "Set display settings for specified channels.\n"
+           "The mapping key is the channel index (e.g. 0, 1, ...).\n"
+           "For each ChannelDisplaySettingsStructWithDescription:\n"
+           "  - description is written to <Description>.\n"
+           "  - isEnabled controls <IsSelected> if that element exists for the channel:\n"
+           "      isEnabled=True  -> <IsSelected>true</IsSelected>\n"
+           "      isEnabled=False -> <IsSelected>false</IsSelected>\n"
+           "    If <IsSelected> is not present in the original metadata, it is left absent.")
+      .def("can_commit", &PyCZIMetadataBuilder::CanCommit,
+           "Check if the builder can commit changes to the file")
+      .def("commit", &PyCZIMetadataBuilder::Commit,
+           "Commit all pending changes to the CZI file");
+
+  // ChannelDisplaySettingsStructWithDescription bindings
+  py::class_<ChannelDisplaySettingsStructWithDescription>(
+      m, "ChannelDisplaySettingsStructWithDescription", py::module_local())
+      .def(py::init<>())
+      .def_readwrite("isEnabled", &ChannelDisplaySettingsStructWithDescription::isEnabled)
+      .def_readwrite("tintingMode", &ChannelDisplaySettingsStructWithDescription::tintingMode)
+      .def_readwrite("tintingColor", &ChannelDisplaySettingsStructWithDescription::tintingColor)
+      .def_readwrite("blackPoint", &ChannelDisplaySettingsStructWithDescription::blackPoint)
+      .def_readwrite("whitePoint", &ChannelDisplaySettingsStructWithDescription::whitePoint)
+      .def_readwrite("description", &ChannelDisplaySettingsStructWithDescription::description)
+      .def("Clear", &ChannelDisplaySettingsStructWithDescription::Clear);
+
+  // CZIeditAPI bindings
+  py::class_<CZIeditAPI>(m, "czi_editor", py::module_local())
+      .def(py::init<const std::wstring&>(), py::arg("file_name"),
+           "Open an existing CZI file for in-place metadata editing")
+      .def("close", &CZIeditAPI::Close,
+           "Close the opened CZI file")
+      .def("is_open", &CZIeditAPI::IsOpen,
+           "Check if the file is open")
+      .def("read_metadata_xml", &CZIeditAPI::ReadMetadataXml,
+           "Read the current metadata XML from the file")
+      .def("read_general_document_info",
+           [](const CZIeditAPI& self) -> py::dict {
+               auto info = self.ReadGeneralDocumentInfo();
+               py::dict result;
+               if (info.name_valid) result["name"] = info.name;
+               if (info.title_valid) result["title"] = info.title;
+               if (info.userName_valid) result["user_name"] = info.userName;
+               if (info.description_valid) result["description"] = info.description;
+               if (info.comment_valid) result["comment"] = info.comment;
+               if (info.keywords_valid) result["keywords"] = info.keywords;
+               if (info.rating_valid) result["rating"] = info.rating;
+               if (info.creationDateTime_valid) result["creation_date_time"] = info.creationDateTime;
+               return result;
+           },
+           "Read current general document info as a dictionary")
+      .def("create_metadata_builder", &CZIeditAPI::CreateMetadataBuilder,
+           "Create a metadata builder initialized from the file's current metadata");
 
   // perform one-time-initialization of libCZI
   OneTimeSiteInitialization();

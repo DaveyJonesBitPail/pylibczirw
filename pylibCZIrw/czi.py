@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from enum import Enum
 from os import makedirs
 from os.path import abspath, dirname, isfile
-from typing import Any, Callable, Dict, Generator, NamedTuple, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Generator, NamedTuple, Iterator, Optional, Tuple, Union
 
 import numpy as np
 import validators
@@ -1308,6 +1308,162 @@ class CziWriter:
         self._metadata_writen = True
 
 
+class CziEditor:
+    """CziEditor class.
+
+    Provides in-place metadata editing for an existing CZI file via _pylibCZIrw.czi_editor.
+    """
+
+    def __init__(self, filepath: str) -> None:
+        """Open an existing CZI file for in-place metadata editing."""
+        self._editor = _pylibCZIrw.czi_editor(filepath)
+
+    def close(self) -> None:
+        """Close the editor and underlying file handle."""
+        self._editor.close()
+
+    @property
+    def is_open(self) -> bool:
+        """Return True if the editor is open."""
+        return self._editor.is_open()
+
+    def read_metadata_xml(self) -> str:
+        """Return the current metadata XML."""
+        return self._editor.read_metadata_xml()
+
+    def read_general_document_info(self) -> Dict[str, Any]:
+        """Return general document info as a dictionary (only valid fields)."""
+        return self._editor.read_general_document_info()
+
+    def create_metadata_builder(self) -> "_pylibCZIrw.CziMetadataBuilder":
+        """Create a metadata builder initialized with the file's current metadata."""
+        return self._editor.create_metadata_builder()
+
+    @staticmethod
+    def make_channel_display_setting_with_description(
+        is_enabled: bool,
+        tinting_mode: TintingMode,
+        tinting_color: Rgb8Color,
+        black_point: float,
+        white_point: float,
+        description: str,
+    ) -> "_pylibCZIrw.ChannelDisplaySettingsStructWithDescription":
+        """Helper to build ChannelDisplaySettingsStructWithDescription from Python datatypes."""
+        pod = _pylibCZIrw.ChannelDisplaySettingsStructWithDescription()
+        pod.Clear()
+        pod.isEnabled = is_enabled
+        pod.blackPoint = black_point
+        pod.whitePoint = white_point
+        pod.tintingColor.r = tinting_color.r
+        pod.tintingColor.g = tinting_color.g
+        pod.tintingColor.b = tinting_color.b
+        if tinting_mode == TintingMode.Color:
+            pod.tintingMode = _pylibCZIrw.TintingModeEnum.Color
+        else:
+            pod.tintingMode = getattr(_pylibCZIrw.TintingModeEnum, "None")
+        pod.description = description
+        return pod
+
+    def begin_edit(self) -> "_pylibCZIrw.CziMetadataBuilder":
+        """Create a metadata builder initialized with the current metadata."""
+        return self.create_metadata_builder()
+
+    def apply_general_document_info(
+        self,
+        builder: "_pylibCZIrw.CziMetadataBuilder",
+        *,
+        name: Optional[str] = None,
+        title: Optional[str] = None,
+        user_name: Optional[str] = None,
+        description: Optional[str] = None,
+        comment: Optional[str] = None,
+        keywords: Optional[str] = None,
+        rating: Optional[float] = None,
+    ) -> None:
+        """Apply GeneralDocumentInfo fields to an existing builder."""
+        builder.set_general_document_info(
+            name=name,
+            title=title,
+            user_name=user_name,
+            description=description,
+            comment=comment,
+            keywords=keywords,
+            rating=rating,
+        )
+
+    def apply_scaling_info(
+        self,
+        builder: "_pylibCZIrw.CziMetadataBuilder",
+        *,
+        scale_x: Optional[float] = None,
+        scale_y: Optional[float] = None,
+        scale_z: Optional[float] = None,
+    ) -> None:
+        """Apply scaling info to an existing builder."""
+        builder.set_scaling_info(scale_x=scale_x, scale_y=scale_y, scale_z=scale_z)
+
+    def apply_custom_attribute(
+        self,
+        builder: "_pylibCZIrw.CziMetadataBuilder",
+        key: str,
+        value: Union[int, float, bool, str],
+    ) -> None:
+        """Apply a custom attribute to an existing builder."""
+        from _pylibCZIrw import CustomValueVariant
+        cv = CustomValueVariant()
+        if isinstance(value, bool):
+            cv.boolValue = value
+        elif isinstance(value, int):
+            cv.int32Value = value
+        elif isinstance(value, float):
+            cv.doubleValue = value
+        elif isinstance(value, str):
+            cv.stringValue = value
+        else:
+            raise ValueError("Custom attribute value must be bool, int, float, or str.")
+        builder.set_custom_key_value(key, cv)
+
+    def apply_display_settings(
+        self,
+        builder: "_pylibCZIrw.CziMetadataBuilder",
+        display_settings: Dict[int, ChannelDisplaySettingsDataClass],
+    ) -> None:
+        """Apply display settings for existing channels to an existing builder."""
+        from _pylibCZIrw import ChannelDisplaySettingsStructWithDescription, TintingModeEnum
+
+        def to_pod(ds_py: ChannelDisplaySettingsDataClass) -> ChannelDisplaySettingsStructWithDescription:
+            pod = ChannelDisplaySettingsStructWithDescription()
+            pod.Clear()
+            pod.isEnabled = ds_py.is_enabled
+            pod.blackPoint = ds_py.black_point
+            pod.whitePoint = ds_py.white_point
+            pod.tintingColor.r = ds_py.tinting_color.r
+            pod.tintingColor.g = ds_py.tinting_color.g
+            pod.tintingColor.b = ds_py.tinting_color.b
+            pod.tintingMode = TintingModeEnum.Color if ds_py.tinting_mode == TintingMode.Color else getattr(
+                TintingModeEnum, "None"
+            )
+
+            if hasattr(ds_py, "description"):
+                pod.description = getattr(ds_py, "description") or ""
+            return pod
+
+        builder.set_display_settings({idx: to_pod(ds) for idx, ds in display_settings.items()})
+
+    @contextlib.contextmanager
+    def edit_session(self) -> Iterator["_pylibCZIrw.CziMetadataBuilder"]:
+        """Context manager that yields a builder and commits once on successful exit.
+        No auto-commit on operations; caller applies changes via apply_* helpers or builder methods.
+        """
+        builder = self.begin_edit()
+        try:
+            yield builder
+            if builder.can_commit():
+                builder.commit()
+        except Exception:
+            raise
+
+
 @contextlib.contextmanager
 def open_czi(
     filepath: str,
@@ -1388,3 +1544,39 @@ def create_czi(
         yield writer
     finally:
         writer.close()
+
+
+@contextlib.contextmanager
+def edit_czi(filepath: str) -> Generator[CziEditor, None, None]:
+    """Initialize a czi editor object and returns it.
+
+    Parameters
+    ----------
+    filepath : str
+        File path to an existing CZI.
+
+    Returns
+    ----------
+     : czi_editor
+        CziEditor for in-place metadata editing.
+    """
+    editor = CziEditor(filepath)
+    try:
+        yield editor
+    finally:
+        editor.close()
+
+
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass
+class GeneralDocumentInfoDto:
+    name: Optional[str] = None
+    title: Optional[str] = None
+    user_name: Optional[str] = None
+    description: Optional[str] = None
+    comment: Optional[str] = None
+    keywords: Optional[str] = None
+    rating: Optional[float] = None
+    creation_date_time: Optional[str] = None
