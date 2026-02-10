@@ -219,7 +219,9 @@ class CMakeBuild(build_ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
-            "-DPYTHON_EXECUTABLE=" + sys.executable,  # used for pybind11
+            # Ensure p ybind11 finds and links the current build interpreter (not a different one on PATH)
+            "-DPYBIND11_FINDPYTHON=NEW",
+            "-DPython_EXECUTABLE=" + sys.executable,
         ]
 
         cfg = "Debug" if self.debug else "Release"

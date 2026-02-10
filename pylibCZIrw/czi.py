@@ -205,7 +205,12 @@ class CziReader:
         sub_block_cache_options = _pylibCZIrw.SubBlockCacheOptions()
         sub_block_cache_options.Clear()
         if cache_options:
-            sub_block_cache_options.cacheType = cls.CACHE_TYPE_LUT[cache_options.type]
+            native_cache_type = None
+            native_enum = getattr(_pylibCZIrw, "CacheType", None)
+            if native_enum is not None:
+                native_cache_type = getattr(native_enum, cache_options.type.name, None)
+            if native_cache_type is not None:
+                sub_block_cache_options.cacheType = native_cache_type
             if cache_options.max_memory_usage is not None:
                 sub_block_cache_options.pruneOptions.maxMemoryUsage = cache_options.max_memory_usage
             if cache_options.max_sub_block_count is not None:
