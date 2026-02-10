@@ -236,15 +236,12 @@ static std::shared_ptr<IXmlNodeRw> GetOrCreateChannelById(
         }
 
         if (!ds.description.empty()) {
-            auto descNode = chRw->GetChildNode("Description");
-            if (!descNode) {
-                descNode = chRw->AppendChildNode("Description");
-            }
+            auto descNode = chRw->GetOrCreateChildNode("Description");
             descNode->SetValue(ds.description.c_str());
         }
 
         {
-            auto isSelectedNode = chRw->GetChildNode("IsSelected");
+            auto isSelectedNode = chRw->GetOrCreateChildNode("IsSelected");
             if (isSelectedNode) {
                 isSelectedNode->SetValue(ds.isEnabled ? L"true" : L"false");
             }
