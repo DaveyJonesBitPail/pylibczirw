@@ -283,7 +283,7 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
            py::arg("scale_x") = py::none(),
            py::arg("scale_y") = py::none(),
            py::arg("scale_z") = py::none(),
-           "Set scaling information (pixel size in meters)")
+           "Set scaling information")
       .def("set_custom_key_value", &PyCZIMetadataBuilder::SetCustomKeyValue,
            py::arg("key"), py::arg("value"),
            "Set or add a custom key-value pair")
@@ -291,8 +291,9 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
            py::arg("display_settings"),
            "Set display settings for specified channels.\n"
            "The mapping key is the channel index (e.g. 0, 1, ...).\n"
-           "For each ChannelDisplaySettingsStructWithDescription:\n"
+           "For each ChannelDisplaySettingsStructWithNameAndDescription:\n"
            "  - description is written to <Description>.\n"
+           "  - name is written to <Name>.\n"
            "  - isEnabled controls <IsSelected> if that element exists for the channel:\n"
            "      isEnabled=True  -> <IsSelected>true</IsSelected>\n"
            "      isEnabled=False -> <IsSelected>false</IsSelected>\n"
@@ -303,16 +304,17 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
            "Commit all pending changes to the CZI file");
 
   // ChannelDisplaySettingsStructWithDescription bindings
-  py::class_<ChannelDisplaySettingsStructWithDescription>(
-      m, "ChannelDisplaySettingsStructWithDescription", py::module_local())
+  py::class_<ChannelDisplaySettingsStructWithNameAndDescription>(
+      m, "ChannelDisplaySettingsStructWithNameAndDescription", py::module_local())
       .def(py::init<>())
-      .def_readwrite("isEnabled", &ChannelDisplaySettingsStructWithDescription::isEnabled)
-      .def_readwrite("tintingMode", &ChannelDisplaySettingsStructWithDescription::tintingMode)
-      .def_readwrite("tintingColor", &ChannelDisplaySettingsStructWithDescription::tintingColor)
-      .def_readwrite("blackPoint", &ChannelDisplaySettingsStructWithDescription::blackPoint)
-      .def_readwrite("whitePoint", &ChannelDisplaySettingsStructWithDescription::whitePoint)
-      .def_readwrite("description", &ChannelDisplaySettingsStructWithDescription::description)
-      .def("Clear", &ChannelDisplaySettingsStructWithDescription::Clear);
+      .def_readwrite("isEnabled", &ChannelDisplaySettingsStructWithNameAndDescription::isEnabled)
+      .def_readwrite("tintingMode", &ChannelDisplaySettingsStructWithNameAndDescription::tintingMode)
+      .def_readwrite("tintingColor", &ChannelDisplaySettingsStructWithNameAndDescription::tintingColor)
+      .def_readwrite("blackPoint", &ChannelDisplaySettingsStructWithNameAndDescription::blackPoint)
+      .def_readwrite("whitePoint", &ChannelDisplaySettingsStructWithNameAndDescription::whitePoint)
+      .def_readwrite("description", &ChannelDisplaySettingsStructWithNameAndDescription::description)
+      .def_readwrite("name", &ChannelDisplaySettingsStructWithNameAndDescription::name)
+      .def("Clear", &ChannelDisplaySettingsStructWithNameAndDescription::Clear);
 
   // CZIeditAPI bindings
   py::class_<CZIeditAPI>(m, "czi_editor", py::module_local())
@@ -339,6 +341,21 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
                return result;
            },
            "Read current general document info as a dictionary")
+      .def("read_scaling_info",
+           [](const CZIeditAPI& self) -> py::dict {
+               const auto si = self.ReadScalingInfo();
+               py::dict result;
+               result["scale_x"] = si.scaleX;
+               result["scale_y"] = si.scaleY;
+               result["scale_z"] = si.scaleZ;
+               return result;
+           },
+           "Read current scaling information")
+      .def("read_display_settings", &CZIeditAPI::ReadDisplaySettings,
+              "Read current display settings for all channels as a dictionary mapping channel index to settings")
+      .def("read_custom_key_value", &CZIeditAPI::ReadCustomKeyValue,
+           py::arg("key"),
+           "Read a custom key-value by key. Returns a CustomValueVariant.")
       .def("create_metadata_builder", &CZIeditAPI::CreateMetadataBuilder,
            "Create a metadata builder initialized from the file's current metadata");
 

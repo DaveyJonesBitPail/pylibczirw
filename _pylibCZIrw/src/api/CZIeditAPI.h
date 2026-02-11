@@ -8,13 +8,15 @@
 #include <memory>
 
 /// This POD ("plain-old-data") structure is intended to capture all information
-/// found inside an IChannelDisplaySetting-object and tack on descriptions. It allows for easy
+/// found inside an IChannelDisplaySetting-object and tack on names and descriptions. It allows for easy
 /// modification of the information.
-struct ChannelDisplaySettingsStructWithDescription : ChannelDisplaySettingsStruct {
+struct ChannelDisplaySettingsStructWithNameAndDescription : ChannelDisplaySettingsStruct {
+    std::wstring name;        ///< The name of the channel.
     std::wstring description; ///< The description of the channel.
 
     /// Sets the structure to a defined standard value - not enabled, no tinting,
     /// linear gradation-curve and black-point to zero, white-point to one, and clears description.
+    /// Note that name is not cleared.
     LIBCZI_API void Clear() {
         ChannelDisplaySettingsStruct::Clear();
         this->description.clear();
@@ -67,7 +69,7 @@ public:
     /// Set/merge display settings for specified channels.
     /// Existing channels not in the map are preserved; channels in the map are updated/created.
     /// \param displaySettings Map of channel index -> channel display settings.
-    void SetDisplaySettings(const std::map<int, const ChannelDisplaySettingsStructWithDescription>& displaySettings);
+    void SetDisplaySettings(const std::map<int, const ChannelDisplaySettingsStructWithNameAndDescription>& displaySettings);
 
     /// Set scaling information.
     /// \param scalingInfo The scaling information to write.
@@ -89,7 +91,7 @@ public:
 private:
     /// Apply display settings to a builder (shared implementation).
     static void ApplyDisplaySettings(libCZI::ICziMetadataBuilder* builder,
-        const std::map<int, const ChannelDisplaySettingsStructWithDescription>& displaySettings);
+        const std::map<int, const ChannelDisplaySettingsStructWithNameAndDescription>& displaySettings);
 };
 
 /// Class used to represent a CZI in-place editor object in pylibCZIrw.
@@ -123,6 +125,19 @@ public:
     /// Read current GeneralDocumentInfo from the file.
     /// \returns The GeneralDocumentInfo object (default-initialized if no metadata segment exists).
     libCZI::GeneralDocumentInfo ReadGeneralDocumentInfo() const;
+
+    /// Read current ScalingInfo from the file.
+    /// \returns The ScalingInfo object (with NaN values if no scaling info exists).
+    libCZI::ScalingInfo ReadScalingInfo() const;
+
+    /// Read current display settings for all channels from the file.
+    /// \returns A map of channel index to ChannelDisplaySettingsStructWithNameAndDescription.
+    std::map<int, const ChannelDisplaySettingsStructWithNameAndDescription> ReadDisplaySettings() const;
+
+    /// Read a custom key-value pair from the metadata.
+    /// \param key The key name to look up.
+    /// \returns The value associated with the key, or a default variant if not found.
+    libCZI::CustomValueVariant ReadCustomKeyValue(const std::string& key) const;
 
     /// Create a metadata builder initialized from the file's current metadata.
     /// The builder holds a copy of the metadata that can be modified independently.
