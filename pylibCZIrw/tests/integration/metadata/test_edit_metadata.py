@@ -103,15 +103,16 @@ def test_builder_updates_existing_display_channels_only(czi_working_copy: str) -
     with edit_czi(czi_working_copy) as editor:
         builder = editor.create_metadata_builder()
 
-        from _pylibCZIrw import ChannelDisplaySettingsStructWithDescription, TintingModeEnum
+        from _pylibCZIrw import ChannelDisplaySettingsStructWithNameAndDescription, TintingModeEnum
         first_idx = existing_ids[0]
-        ds = ChannelDisplaySettingsStructWithDescription()
+        ds = ChannelDisplaySettingsStructWithNameAndDescription()
         ds.Clear()
         ds.isEnabled = True
         ds.tintingMode = TintingModeEnum.Color
-        ds.tintingColor.r = Rgb8Color(255, 0, 0).r
-        ds.tintingColor.g = Rgb8Color(255, 0, 0).g
-        ds.tintingColor.b = Rgb8Color(255, 0, 0).b
+        red = Rgb8Color(255, 0, 0)
+        ds.tintingColor.r = red.r
+        ds.tintingColor.g = red.g
+        ds.tintingColor.b = red.b
         ds.blackPoint = 0.05
         ds.whitePoint = 0.95
         ds.description = "Edited by test"
@@ -148,6 +149,8 @@ def test_builder_updates_existing_display_channels_only(czi_working_copy: str) -
             assert ch_after["IsSelected"] in ("true", "false")
         assert "BitCountRange" in ch_after or "PixelType" in ch_after
 
+        ds_map = editor.read_display_settings()
+        assert isinstance(ds_map, dict)
 
 def test_builder_set_xml_roundtrip(czi_working_copy: str) -> None:
     """SetXml replaces builder content; Commit writes it back."""
@@ -217,8 +220,8 @@ def test_set_display_settings_nonexistent_channel_noop(czi_working_copy: str) ->
     with edit_czi(czi_working_copy) as editor:
         builder = editor.create_metadata_builder()
 
-        from _pylibCZIrw import ChannelDisplaySettingsStructWithDescription, TintingModeEnum
-        ds = ChannelDisplaySettingsStructWithDescription()
+        from _pylibCZIrw import ChannelDisplaySettingsStructWithNameAndDescription, TintingModeEnum
+        ds = ChannelDisplaySettingsStructWithNameAndDescription()
         ds.Clear()
         ds.isEnabled = True
         ds.tintingMode = TintingModeEnum.Color
@@ -257,6 +260,8 @@ def test_set_custom_key_value_add_and_overwrite(czi_working_copy: str) -> None:
         custom = info.get("CustomAttributes", {}).get("KeyValue", {})
         assert "TestKey" in custom
 
+        assert editor.read_custom_key_value("TestKey") == 42
+
         cv2 = CustomValueVariant()
         cv2.stringValue = "Hello"
         builder = editor.create_metadata_builder()
@@ -269,6 +274,7 @@ def test_set_custom_key_value_add_and_overwrite(czi_working_copy: str) -> None:
         custom2 = info2.get("CustomAttributes", {}).get("KeyValue", {})
         assert "TestKey" in custom2
 
+        assert editor.read_custom_key_value("TestKey") == "Hello"
 
 def test_set_scaling_info_partial_fields(czi_working_copy: str) -> None:
     with edit_czi(czi_working_copy) as editor:
@@ -278,13 +284,13 @@ def test_set_scaling_info_partial_fields(czi_working_copy: str) -> None:
 
         xml = editor.read_metadata_xml()
         md = xmltodict.parse(xml)
-        scaling = (
-            md.get("ImageDocument", {})
-            .get("Metadata", {})
-            .get("Scaling", {})
-        )
+        scaling = md.get("ImageDocument", {}).get("Metadata", {}).get("Scaling", {})
         assert md.get("ImageDocument", {}).get("Metadata", {}) is not None
 
+        dto = editor.read_scaling_info()
+        assert hasattr(dto, "scale_x")
+        assert hasattr(dto, "scale_y")
+        assert hasattr(dto, "scale_z")
 
 def test_commit_without_changes_no_op(czi_working_copy: str) -> None:
     with edit_czi(czi_working_copy) as editor:
