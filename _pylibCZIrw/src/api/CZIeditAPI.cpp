@@ -21,8 +21,9 @@ void CZIeditAPI::Close() {
 
 std::string CZIeditAPI::ReadMetadataXml() const {
     if (!this->spReaderWriter_) {
-        return std::string();
+        throw std::logic_error("ReaderWriter is not initialized.");
     }
+
     if (auto mdSeg = this->spReaderWriter_->ReadMetadataSegment()) {
         auto meta = CreateMetaFromMetadataSegment(mdSeg.get());
         return meta->GetXml();
@@ -33,7 +34,7 @@ std::string CZIeditAPI::ReadMetadataXml() const {
 libCZI::GeneralDocumentInfo CZIeditAPI::ReadGeneralDocumentInfo() const {
     GeneralDocumentInfo result;
     if (!this->spReaderWriter_) {
-        return result;
+        throw std::logic_error("ReaderWriter is not initialized.");
     }
     if (auto mdSeg = this->spReaderWriter_->ReadMetadataSegment()) {
         auto meta = CreateMetaFromMetadataSegment(mdSeg.get());
@@ -48,7 +49,7 @@ libCZI::GeneralDocumentInfo CZIeditAPI::ReadGeneralDocumentInfo() const {
 libCZI::ScalingInfo CZIeditAPI::ReadScalingInfo() const {
     ScalingInfo result{};
     if (!this->spReaderWriter_) {
-        return result;
+        throw std::logic_error("ReaderWriter is not initialized.");
     }
 
     if (auto mdSeg = this->spReaderWriter_->ReadMetadataSegment()) {
@@ -64,18 +65,18 @@ libCZI::CustomValueVariant CZIeditAPI::ReadCustomKeyValue(const std::string& key
     libCZI::CustomValueVariant result;
 
     if (!this->spReaderWriter_) {
-        return result;
+        throw std::logic_error("ReaderWriter is not initialized.");
     }
 
     auto mdSeg = this->spReaderWriter_->ReadMetadataSegment();
     if (!mdSeg) {
-        return result;
+        throw std::logic_error("Unable to read the metadata segment.");
     }
 
     auto meta = CreateMetaFromMetadataSegment(mdSeg.get());
     auto rootRo = meta->GetChildNodeReadonly("ImageDocument");
     if (!rootRo) {
-        return result;
+        throw std::logic_error("Unable to find the root node.");
     }
 
     std::string path = "Metadata/Information/CustomAttributes/KeyValue/";
@@ -156,18 +157,18 @@ CZIeditAPI::ReadDisplaySettings() const {
     std::map<int, const ChannelDisplaySettingsStructWithNameAndDescription> result;
 
     if (!this->spReaderWriter_) {
-        return result;
+        throw std::logic_error("ReaderWriter is not initialized.");
     }
     auto mdSeg = this->spReaderWriter_->ReadMetadataSegment();
     if (!mdSeg) {
-        return result;
+        throw std::logic_error("Unable to read the metadata segment.");
     }
 
     auto meta = CreateMetaFromMetadataSegment(mdSeg.get());
 
     auto channelsNode = meta->GetChildNodeReadonly("ImageDocument/Metadata/DisplaySetting/Channels");
     if (!channelsNode) {
-        return result;
+        throw std::logic_error("Unable to find the channels node.");
     }
 
     int chanIdxEnum = -1;
@@ -255,7 +256,7 @@ PyCZIMetadataBuilder::PyCZIMetadataBuilder(std::shared_ptr<ICziMetadataBuilder> 
 
 std::string PyCZIMetadataBuilder::GetXml(bool prettify) const {
     if (!this->spBuilder_) {
-        return std::string();
+        throw std::logic_error("Builder is not initialized.");
     }
     return this->spBuilder_->GetXml(prettify);
 }
