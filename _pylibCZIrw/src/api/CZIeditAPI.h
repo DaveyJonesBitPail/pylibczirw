@@ -18,8 +18,8 @@ struct ChannelDisplaySettingsStructWithNameAndDescription : ChannelDisplaySettin
     /// Sets the structure to a defined standard value - not enabled, no tinting,
     /// linear gradation-curve and black-point to zero, white-point to one, and clears description.
     /// Note that name is not cleared.
-    LIBCZI_API void Clear() {
-        ChannelDisplaySettingsStruct::Clear();
+    void Clear() {
+        this->ChannelDisplaySettingsStruct::Clear();
         this->description.clear();
     }
 };
