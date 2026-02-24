@@ -3,9 +3,10 @@
 #include "PImage.h"
 #include "inc_libCzi.h"
 #include "CZIwriteAPI.h"
-#include <optional>
 #include <iostream>
+#include <map>
 #include <memory>
+#include <string>
 
 /// This POD ("plain-old-data") structure is intended to capture all information
 /// found inside an IChannelDisplaySetting-object and tack on names and descriptions. It allows for easy

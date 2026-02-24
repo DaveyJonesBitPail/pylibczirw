@@ -7,6 +7,8 @@
 #include "../api/site.h"
 #include "PbHelper.h"
 
+#include<optional>
+
 #include <pybind11/chrono.h>
 #include <pybind11/complex.h>
 #include <pybind11/functional.h>
