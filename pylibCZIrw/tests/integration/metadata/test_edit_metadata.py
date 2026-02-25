@@ -7,7 +7,13 @@ import xmltodict
 import xml.etree.ElementTree as ET
 import pytest
 
-from pylibCZIrw.czi import edit_czi, open_czi, Rgb8Color
+from pylibCZIrw.czi import (
+    edit_czi,
+    open_czi,
+    Rgb8Color,
+    TintingMode,
+    ChannelDisplaySettingsDataClassWithNameAndDescription,
+)
 
 working_dir = os.path.dirname(os.path.abspath(__file__))
 CZI_DOCUMENT_TEST1 = os.path.join(working_dir, "test_data", "c1_bgr24_t1_z1_h1.czi")
@@ -103,19 +109,16 @@ def test_builder_updates_existing_display_channels_only(czi_working_copy: str) -
     with edit_czi(czi_working_copy) as editor:
         builder = editor.create_metadata_builder()
 
-        from _pylibCZIrw import ChannelDisplaySettingsStructWithNameAndDescription, TintingModeEnum
         first_idx = existing_ids[0]
-        ds = ChannelDisplaySettingsStructWithNameAndDescription()
-        ds.Clear()
-        ds.isEnabled = True
-        ds.tintingMode = TintingModeEnum.Color
         red = Rgb8Color(255, 0, 0)
-        ds.tintingColor.r = red.r
-        ds.tintingColor.g = red.g
-        ds.tintingColor.b = red.b
-        ds.blackPoint = 0.05
-        ds.whitePoint = 0.95
-        ds.description = "Edited by test"
+        ds = ChannelDisplaySettingsDataClassWithNameAndDescription(
+            is_enabled=True,
+            tinting_mode=TintingMode.Color,
+            tinting_color=red,
+            black_point=0.05,
+            white_point=0.95,
+            description="Edited by test",
+        )
 
         builder.set_display_settings({first_idx: ds})
         assert builder.can_commit()
@@ -220,12 +223,14 @@ def test_set_display_settings_nonexistent_channel_noop(czi_working_copy: str) ->
     with edit_czi(czi_working_copy) as editor:
         builder = editor.create_metadata_builder()
 
-        from _pylibCZIrw import ChannelDisplaySettingsStructWithNameAndDescription, TintingModeEnum
-        ds = ChannelDisplaySettingsStructWithNameAndDescription()
-        ds.Clear()
-        ds.isEnabled = True
-        ds.tintingMode = TintingModeEnum.Color
-        ds.description = "SHOULD NOT BE ADDED"
+        ds = ChannelDisplaySettingsDataClassWithNameAndDescription(
+            is_enabled=True,
+            tinting_mode=TintingMode.Color,
+            tinting_color=Rgb8Color(0, 0, 0),
+            black_point=0.0,
+            white_point=1.0,
+            description="SHOULD NOT BE ADDED",
+        )
 
         builder.set_display_settings({9999: ds})
         builder.commit()
@@ -248,10 +253,7 @@ def test_set_custom_key_value_add_and_overwrite(czi_working_copy: str) -> None:
     with edit_czi(czi_working_copy) as editor:
         builder = editor.create_metadata_builder()
 
-        from _pylibCZIrw import CustomValueVariant
-        cv = CustomValueVariant()
-        cv.int32Value = 42
-        builder.set_custom_key_value("TestKey", cv)
+        builder.set_custom_key_value("TestKey", 42)
         builder.commit()
 
         xml = editor.read_metadata_xml()
@@ -262,10 +264,8 @@ def test_set_custom_key_value_add_and_overwrite(czi_working_copy: str) -> None:
 
         assert editor.read_custom_key_value("TestKey") == 42
 
-        cv2 = CustomValueVariant()
-        cv2.stringValue = "Hello"
         builder = editor.create_metadata_builder()
-        builder.set_custom_key_value("TestKey", cv2)
+        builder.set_custom_key_value("TestKey", "Hello")
         builder.commit()
 
         xml2 = editor.read_metadata_xml()
