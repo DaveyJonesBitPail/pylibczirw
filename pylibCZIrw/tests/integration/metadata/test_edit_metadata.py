@@ -1,10 +1,12 @@
-"""Integration tests for in-place metadata editing via CziEditor."""
+"""Module implementing integration tests for editing CZI metadata."""
 
 import hashlib
 import os
 import shutil
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-import defusedxml.ElementTree as ET
+import defusedxml.ElementTree as ET  # type: ignore[import-not-found]
 import pytest
 import xmltodict
 
@@ -29,11 +31,11 @@ def _sha256(path: str) -> str:
 
 
 @pytest.fixture
-def czi_working_copy(tmp_path) -> str:
+def czi_working_copy(tmp_path: Path) -> str:
     src = CZI_DOCUMENT_TEST1
     dst = tmp_path / "work.czi"
     shutil.copy2(src, dst)
-    pytest.original_hash = _sha256(src)
+    pytest.original_hash = _sha256(src)  # type: ignore[attr-defined]
     return str(dst)
 
 
@@ -138,7 +140,7 @@ def test_builder_updates_existing_display_channels_only(czi_working_copy: str) -
         if isinstance(channels, dict):
             channels = [channels]
 
-        def find_channel(ch_list, target_idx):
+        def find_channel(ch_list: List[Dict[str, Any]], target_idx: int) -> Optional[Dict[str, Any]]:
             for ch in ch_list:
                 cid = ch.get("@Id", "")
                 if cid == f"Channel:{target_idx}":

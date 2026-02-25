@@ -1,6 +1,7 @@
 """Module implementing unit tests for the CziEditor class"""
 
 import types
+from typing import Any, Dict, Optional, Tuple
 
 import pytest
 
@@ -10,44 +11,44 @@ from pylibCZIrw import czi as czi_mod
 class FakeBuilder:
     """Fake builder for testing CziMetadataBuilder wrapper."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._xml = "<ImageDocument/>"
-        self._gdi = {}
-        self._ds = {}
-        self._sc = {}
-        self._kv = None
+        self._gdi: Dict[str, Any] = {}
+        self._ds: Dict[str, Any] = {}
+        self._sc: Dict[str, Any] = {}
+        self._kv: Optional[Tuple[str, str]] = None
 
-    def get_xml(self, prettify: bool = False):  # pylint: disable=unused-argument
+    def get_xml(self, prettify: bool = False) -> str:  # pylint: disable=unused-argument
         """Return the stored XML."""
         return self._xml
 
-    def set_xml(self, xml: str):
+    def set_xml(self, xml: str) -> None:
         """Set the XML content."""
         self._xml = xml
 
-    def set_general_document_info(self, **kwargs):
+    def set_general_document_info(self, **kwargs: Any) -> None:
         """Store general document info."""
         self._gdi.update(kwargs)
 
-    def set_display_settings(self, mapping):
+    def set_display_settings(self, mapping: Dict[int, Any]) -> None:
         """Store display settings."""
         self._ds.update(mapping)
 
-    def set_scaling_info(self, **kwargs):
+    def set_scaling_info(self, **kwargs: Any) -> None:
         """Store scaling info."""
         self._sc.update(kwargs)
 
-    def set_custom_key_value(self, key, value):
+    def set_custom_key_value(self, key: str, value: str) -> None:
         """Store custom key-value pair."""
         self._kv = (key, value)
 
     @staticmethod
-    def can_commit():
+    def can_commit() -> bool:
         """Return True (always committable in tests)."""
         return True
 
     @staticmethod
-    def commit():
+    def commit() -> None:
         """No-op commit for testing."""
         return None
 
@@ -55,36 +56,36 @@ class FakeBuilder:
 class FakeEditor:
     """Fake editor for testing CziEditor wrapper."""
 
-    def __init__(self, path: str):
+    def __init__(self, path: str) -> None:
         self._path = path
         self._closed = False
         self._xml = '<?xml version="1.0"?>\n<ImageDocument></ImageDocument>'
-        self._info = {"title": "T", "user_name": "U"}
+        self._info: Dict[str, str] = {"title": "T", "user_name": "U"}
 
-    def is_open(self):
+    def is_open(self) -> bool:
         """Return True if not closed."""
         return not self._closed
 
-    def close(self):
+    def close(self) -> None:
         """Mark as closed."""
         self._closed = True
 
-    def read_metadata_xml(self):
+    def read_metadata_xml(self) -> str:
         """Return stored XML."""
         return self._xml
 
-    def read_general_document_info(self):
+    def read_general_document_info(self) -> Dict[str, str]:
         """Return stored info dict."""
         return dict(self._info)
 
-    def create_metadata_builder(self):
+    def create_metadata_builder(self) -> FakeBuilder:
         """Create a FakeBuilder or raise if closed."""
         if self._closed:
             raise RuntimeError("not open")
         return FakeBuilder()
 
 
-def test_is_open_delegates(monkeypatch):
+def test_is_open_delegates(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that is_open property delegates to native editor."""
     monkeypatch.setattr(czi_mod, "_pylibCZIrw", types.SimpleNamespace(czi_editor=FakeEditor))
     ed = czi_mod.CziEditor("dummy.czi")
@@ -93,7 +94,7 @@ def test_is_open_delegates(monkeypatch):
     assert ed.is_open is False
 
 
-def test_read_metadata_xml_delegates(monkeypatch):
+def test_read_metadata_xml_delegates(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that read_metadata_xml delegates to native editor."""
     monkeypatch.setattr(czi_mod, "_pylibCZIrw", types.SimpleNamespace(czi_editor=FakeEditor))
     with czi_mod.edit_czi("x.czi") as ed:
@@ -102,7 +103,7 @@ def test_read_metadata_xml_delegates(monkeypatch):
         assert "<ImageDocument" in xml
 
 
-def test_read_general_document_info_dict(monkeypatch):
+def test_read_general_document_info_dict(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that read_general_document_info returns a dict."""
     monkeypatch.setattr(czi_mod, "_pylibCZIrw", types.SimpleNamespace(czi_editor=FakeEditor))
     ed = czi_mod.CziEditor("dummy.czi")
@@ -112,7 +113,7 @@ def test_read_general_document_info_dict(monkeypatch):
     assert info["user_name"] == "U"
 
 
-def test_create_metadata_builder_exposes_expected_api(monkeypatch):
+def test_create_metadata_builder_exposes_expected_api(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that create_metadata_builder returns an object with expected methods."""
     monkeypatch.setattr(czi_mod, "_pylibCZIrw", types.SimpleNamespace(czi_editor=FakeEditor))
     ed = czi_mod.CziEditor("dummy.czi")
@@ -133,27 +134,27 @@ def test_create_metadata_builder_exposes_expected_api(monkeypatch):
 class FakeStruct:
     """Fake struct for testing display settings."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         class Color:  # pylint: disable=missing-class-docstring
-            def __init__(self):
-                self.r = None
-                self.g = None
-                self.b = None
+            def __init__(self) -> None:
+                self.r: Optional[int] = None
+                self.g: Optional[int] = None
+                self.b: Optional[int] = None
 
         self._cleared = False
-        self.isEnabled = None
-        self.blackPoint = None
-        self.whitePoint = None
+        self.isEnabled: Optional[bool] = None
+        self.blackPoint: Optional[float] = None
+        self.whitePoint: Optional[float] = None
         self.tintingColor = Color()
-        self.tintingMode = None
-        self.description = None
+        self.tintingMode: Optional[Any] = None
+        self.description: Optional[str] = None
 
-    def Clear(self):  # pylint: disable=invalid-name
+    def Clear(self) -> None:  # pylint: disable=invalid-name
         """Mark as cleared."""
         self._cleared = True
 
 
-def test_make_channel_display_setting_with_description(monkeypatch):
+def test_make_channel_display_setting_with_description(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test make_channel_display_setting_with_description helper."""
     TintEnum = types.SimpleNamespace(Color=object(), **{"None": object()})
     fake_ns = types.SimpleNamespace(
@@ -192,7 +193,7 @@ def test_make_channel_display_setting_with_description(monkeypatch):
     assert ds2.tintingMode is getattr(TintEnum, "None")
 
 
-def test_edit_czi_context_manager_closes(monkeypatch):
+def test_edit_czi_context_manager_closes(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that edit_czi context manager properly closes the editor."""
     monkeypatch.setattr(czi_mod, "_pylibCZIrw", types.SimpleNamespace(czi_editor=FakeEditor))
     with czi_mod.edit_czi("x.czi") as ed:
@@ -201,11 +202,11 @@ def test_edit_czi_context_manager_closes(monkeypatch):
     assert ed.is_open is False
 
 
-def test_create_metadata_builder_raises_when_not_open(monkeypatch):
+def test_create_metadata_builder_raises_when_not_open(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that create_metadata_builder raises when editor is closed."""
 
     class RaisingEditor(FakeEditor):  # pylint: disable=missing-class-docstring
-        def create_metadata_builder(self):
+        def create_metadata_builder(self) -> FakeBuilder:
             """Raise RuntimeError to simulate closed editor."""
             raise RuntimeError("not open")
 
