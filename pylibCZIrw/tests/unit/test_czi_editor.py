@@ -150,6 +150,9 @@ class FakeStruct:
         """Mark as cleared."""
         self._cleared = True
 
+
+def test_make_channel_display_setting_with_description(monkeypatch):
+    """Test make_channel_display_setting_with_description helper."""
     TintEnum = types.SimpleNamespace(Color=object(), **{"None": object()})
     fake_ns = types.SimpleNamespace(
         ChannelDisplaySettingsStructWithDescription=FakeStruct,
