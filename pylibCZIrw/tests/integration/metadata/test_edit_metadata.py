@@ -1,5 +1,7 @@
 """Integration tests for in-place metadata editing via CziEditor."""
     
+"""Integration tests for in-place metadata editing via CziEditor."""
+
 import os
 import shutil
 import hashlib
@@ -155,6 +157,7 @@ def test_builder_updates_existing_display_channels_only(czi_working_copy: str) -
         ds_map = editor.read_display_settings()
         assert isinstance(ds_map, dict)
 
+
 def test_builder_set_xml_roundtrip(czi_working_copy: str) -> None:
     """SetXml replaces builder content; Commit writes it back."""
     with edit_czi(czi_working_copy) as editor:
@@ -276,6 +279,7 @@ def test_set_custom_key_value_add_and_overwrite(czi_working_copy: str) -> None:
 
         assert editor.read_custom_key_value("TestKey") == "Hello"
 
+
 def test_set_scaling_info_partial_fields(czi_working_copy: str) -> None:
     with edit_czi(czi_working_copy) as editor:
         builder = editor.create_metadata_builder()
@@ -284,13 +288,13 @@ def test_set_scaling_info_partial_fields(czi_working_copy: str) -> None:
 
         xml = editor.read_metadata_xml()
         md = xmltodict.parse(xml)
-        scaling = md.get("ImageDocument", {}).get("Metadata", {}).get("Scaling", {})
         assert md.get("ImageDocument", {}).get("Metadata", {}) is not None
 
         dto = editor.read_scaling_info()
         assert hasattr(dto, "scale_x")
         assert hasattr(dto, "scale_y")
         assert hasattr(dto, "scale_z")
+
 
 def test_commit_without_changes_no_op(czi_working_copy: str) -> None:
     with edit_czi(czi_working_copy) as editor:

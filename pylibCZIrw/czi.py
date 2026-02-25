@@ -1312,6 +1312,7 @@ class CziWriter:
         )
         self._metadata_writen = True
 
+
 @dataclass
 class ScalingInfoDto:
     """ScalingInfoDto.
@@ -1333,6 +1334,7 @@ class ScalingInfoDto:
     scale_y: Optional[float] = None
     scale_z: Optional[float] = None
 
+
 @dataclass
 class ChannelDisplaySettingsDataClassWithNameAndDescription(ChannelDisplaySettingsDataClass):
     """ChannelDisplaySettingsDataClassWithNameAndDescription.
@@ -1348,19 +1350,6 @@ class ChannelDisplaySettingsDataClassWithNameAndDescription(ChannelDisplaySettin
     name: Optional[str] = None
     description: Optional[str] = None
 
-def _to_channel_display_pod(value: Union[ChannelDisplaySettingsDataClass, ChannelDisplaySettingsDataClassWithNameAndDescription]) -> "_pylibCZIrw.ChannelDisplaySettingsStructWithDescription":
-    pod = ChannelDisplaySettingsStructWithDescription()
-    pod.Clear()
-    pod.isEnabled = value.is_enabled
-    pod.blackPoint = value.black_point
-    pod.whitePoint = value.white_point
-    pod.tintingColor.r = value.tinting_color.r
-    pod.tintingColor.g = value.tinting_color.g
-    pod.tintingColor.b = value.tinting_color.b
-    pod.tintingMode = TintingModeEnum.Color if value.tinting_mode == TintingMode.Color else getattr(TintingModeEnum, "None")
-    pod.description = getattr(value, "description", None) or ""
-    pod.description = getattr(value, "name", None) or ""
-    return pod
 
 @dataclass
 class GeneralDocumentInfoDto:
@@ -1534,7 +1523,8 @@ class CziMetadataBuilder:
 
         Parameters
         ----------
-        display_settings : Dict[int, ChannelDisplaySettingsDataClass or ChannelDisplaySettingsDataClassWithNameAndDescription]
+        display_settings : Dict[int, ChannelDisplaySettingsDataClass or \
+            ChannelDisplaySettingsDataClassWithNameAndDescription]
             Mapping from channel index to settings DTO.
 
         Notes
@@ -1545,7 +1535,12 @@ class CziMetadataBuilder:
         """
         from _pylibCZIrw import ChannelDisplaySettingsStructWithNameAndDescription, TintingModeEnum
 
-        def to_pod(ds_py: Union[ChannelDisplaySettingsDataClass, ChannelDisplaySettingsDataClassWithNameAndDescription]) -> ChannelDisplaySettingsStructWithNameAndDescription:
+        def to_pod(
+            ds_py: Union[
+                ChannelDisplaySettingsDataClass,
+                ChannelDisplaySettingsDataClassWithNameAndDescription
+            ]
+        ) -> ChannelDisplaySettingsStructWithNameAndDescription:
             pod = ChannelDisplaySettingsStructWithNameAndDescription()
             pod.Clear()
             pod.isEnabled = ds_py.is_enabled
@@ -1569,6 +1564,7 @@ class CziMetadataBuilder:
 
     def commit(self) -> None:
         self._native.commit()
+
 
 class CziEditor:
     """CziEditor.
@@ -1671,9 +1667,12 @@ class CziEditor:
         """
         native_map = self._editor.read_display_settings()
 
-        def to_dto(pod: "_pylibCZIrw.ChannelDisplaySettingsStructWithNameAndDescription") -> ChannelDisplaySettingsDataClassWithNameAndDescription:
+        def to_dto(
+            pod: "_pylibCZIrw.ChannelDisplaySettingsStructWithNameAndDescription"
+        ) -> ChannelDisplaySettingsDataClassWithNameAndDescription:
             # map native tinting-mode enum to Python TintingMode
-            tint_mode_py = TintingMode.Color if pod.tintingMode == _pylibCZIrw.TintingModeEnum.Color else TintingMode.none
+            tinting_enum_color = _pylibCZIrw.TintingModeEnum.Color
+            tint_mode_py = TintingMode.Color if pod.tintingMode == tinting_enum_color else TintingMode.none
             return ChannelDisplaySettingsDataClassWithNameAndDescription(
                 is_enabled=bool(getattr(pod, "isEnabled", False)),
                 tinting_mode=tint_mode_py,
@@ -1690,7 +1689,7 @@ class CziEditor:
 
         return {idx: to_dto(p) for idx, p in native_map.items()}
 
-    def create_metadata_builder(self) -> "CZIMetadataBuilder":
+    def create_metadata_builder(self) -> "CziMetadataBuilder":
         """Create a builder initialized with the file's current metadata.
 
         Notes
@@ -1726,12 +1725,12 @@ class CziEditor:
         pod.description = description
         return pod
 
-    def begin_edit(self) -> "CZIMetadataBuilder":
+    def begin_edit(self) -> "CziMetadataBuilder":
         """Start an edit session by creating a metadata builder."""
         return self.create_metadata_builder()
 
     @contextlib.contextmanager
-    def edit_session(self) -> Iterator["CZIMetadataBuilder"]:
+    def edit_session(self) -> Iterator["CziMetadataBuilder"]:
         """Context-managed edit session."""
         builder = self.begin_edit()
         try:
