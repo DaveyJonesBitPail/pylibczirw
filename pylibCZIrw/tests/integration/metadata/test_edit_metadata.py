@@ -3,10 +3,10 @@
 import hashlib
 import os
 import shutil
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import defusedxml.ElementTree as ET  # type: ignore[import-not-found]
 import pytest
 import xmltodict
 
@@ -44,8 +44,8 @@ def test_editor_open_close(czi_working_copy: str) -> None:
     with edit_czi(czi_working_copy) as editor:
         assert editor.is_open
         xml = editor.read_metadata_xml()
-        xmltree = ET.ElementTree(ET.fromstring(xml))
-        assert xmltree.getroot().tag == "ImageDocument"
+        root = ET.fromstring(xml)
+        assert root.tag == "ImageDocument"
     assert _sha256(CZI_DOCUMENT_TEST1) == pytest.original_hash
 
 
@@ -171,9 +171,9 @@ def test_builder_set_xml_roundtrip(czi_working_copy: str) -> None:
         builder.commit()
 
         xml_after = editor.read_metadata_xml()
-        xmltree = ET.ElementTree(ET.fromstring(xml_after))
+        root = ET.fromstring(xml_after)
         assert xml_after.lstrip().startswith("<?xml")
-        assert xmltree.getroot().tag == "ImageDocument"
+        assert root.tag == "ImageDocument"
 
 
 def test_editor_multiple_commits(czi_working_copy: str) -> None:
