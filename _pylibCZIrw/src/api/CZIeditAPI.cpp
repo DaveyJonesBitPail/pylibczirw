@@ -54,7 +54,12 @@ libCZI::ScalingInfo CZIeditAPI::ReadScalingInfo() const {
 
     if (auto mdSeg = this->spReaderWriter_->ReadMetadataSegment()) {
         auto meta = CreateMetaFromMetadataSegment(mdSeg.get());
-        result = meta->GetDocumentInfo()->GetScalingInfo();
+        auto documentInfo = meta->GetDocumentInfo();
+        if (!documentInfo) {
+            throw std::logic_error("Unable to get document information from metadata.");
+        }
+
+        result = documentInfo->GetScalingInfo();
     }
 
     return result;
