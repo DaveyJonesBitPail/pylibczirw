@@ -124,11 +124,7 @@ def test_builder_updates_existing_display_channels_only(czi_working_copy: str) -
     with open_czi(czi_working_copy) as reader:
         meta = xmltodict.parse(reader.raw_metadata)
         ds_channels = _get_display_channels(meta)
-        existing_ids = [
-            _extract_channel_index(ch, i)
-            for i, ch in enumerate(ds_channels)
-            if ch.get("@Id")
-        ]
+        existing_ids = [_extract_channel_index(ch, i) for i, ch in enumerate(ds_channels) if ch.get("@Id")]
 
     if not existing_ids:
         pytest.skip("Asset has no DisplaySetting/Channels; skipping.")
