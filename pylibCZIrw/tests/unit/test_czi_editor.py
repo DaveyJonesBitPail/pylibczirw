@@ -9,7 +9,8 @@ from pylibCZIrw import czi as czi_mod
 
 
 class FakeBuilder:
-   """Fake builder for testing CziMetadataBuilder wrapper."""
+    """Fake builder for testing CziMetadataBuilder wrapper."""
+
 
 def __init__(self) -> None:
     self._xml = "<ImageDocument/>"
@@ -18,34 +19,42 @@ def __init__(self) -> None:
     self._sc: Dict[str, Any] = {}
     self._kv: Optional[Tuple[str, str]] = None
 
+
 def get_xml(self, prettify: bool = False) -> str:  # pylint: disable=unused-argument
     """Return the stored XML."""
     return self._xml
+
 
 def set_xml(self, xml: str) -> None:
     """Set the XML content."""
     self._xml = xml
 
+
 def set_general_document_info(self, **kwargs: Any) -> None:
     """Store general document info."""
     self._gdi.update(kwargs)
+
 
 def set_display_settings(self, mapping: Dict[int, Any]) -> None:
     """Store display settings."""
     self._ds.update(mapping)
 
+
 def set_scaling_info(self, **kwargs: Any) -> None:
     """Store scaling info."""
     self._sc.update(kwargs)
+
 
 def set_custom_key_value(self, key: str, value: str) -> None:
     """Store custom key-value pair."""
     self._kv = (key, value)
 
+
 @staticmethod
 def can_commit() -> bool:
     """Return True (always committable in tests)."""
     return True
+
 
 @staticmethod
 def commit() -> None:

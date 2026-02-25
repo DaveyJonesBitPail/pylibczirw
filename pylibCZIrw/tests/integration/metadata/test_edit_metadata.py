@@ -1,5 +1,7 @@
 """Module implementing integration tests for editing CZI metadata."""
 
+# pylint: disable=redefined-outer-name
+
 import hashlib
 import os
 import shutil
@@ -23,6 +25,7 @@ CZI_DOCUMENT_TEST1 = os.path.join(working_dir, "test_data", "c1_bgr24_t1_z1_h1.c
 
 
 def _sha256(path: str) -> str:
+    """Compute SHA-256 hash of a file."""
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(65536), b""):
@@ -32,6 +35,7 @@ def _sha256(path: str) -> str:
 
 @pytest.fixture
 def czi_working_copy(tmp_path: Path) -> str:
+    """Create a writable copy of the test CZI document for editing tests."""
     src = CZI_DOCUMENT_TEST1
     dst = tmp_path / "work.czi"
     shutil.copy2(src, dst)
@@ -79,32 +83,52 @@ def test_builder_commit_updates_document_info(czi_working_copy: str) -> None:
         assert info_node["Document"]["Comment"] == "Edited by editor test"
 
 
+def _get_display_channels(meta: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Extract display channels from parsed metadata."""
+    ds_channels = (
+        meta.get("ImageDocument", {})
+        .get("Metadata", {})
+        .get("DisplaySetting", {})
+        .get("Channels", {})
+        .get("Channel", [])
+    )
+    if isinstance(ds_channels, dict):
+        ds_channels = [ds_channels]
+    return ds_channels
+
+
+def _extract_channel_index(channel: Dict[str, Any], default_idx: int) -> int:
+    """Extract channel index from channel ID or return default."""
+    cid = channel.get("@Id")
+    if not cid:
+        return default_idx
+    if cid.startswith("Channel:"):
+        try:
+            return int(cid.split(":")[1])
+        except (ValueError, IndexError):
+            return default_idx
+    return default_idx
+
+
+def _find_channel(ch_list: List[Dict[str, Any]], target_idx: int) -> Optional[Dict[str, Any]]:
+    """Find a channel by its index in a list of channels."""
+    for ch in ch_list:
+        cid = ch.get("@Id", "")
+        if cid == f"Channel:{target_idx}":
+            return ch
+    return None
+
+
 def test_builder_updates_existing_display_channels_only(czi_working_copy: str) -> None:
     """Update DisplaySetting/Channels for existing channels without overwriting entire structure."""
     with open_czi(czi_working_copy) as reader:
-        raw = reader.raw_metadata
-        meta = xmltodict.parse(raw)
-        ds_channels = (
-            meta.get("ImageDocument", {})
-            .get("Metadata", {})
-            .get("DisplaySetting", {})
-            .get("Channels", {})
-            .get("Channel", [])
-        )
-        if isinstance(ds_channels, dict):
-            ds_channels = [ds_channels]
-        existing_ids = []
-        for i, ch in enumerate(ds_channels):
-            cid = ch.get("@Id")
-            if cid:
-                if cid.startswith("Channel:"):
-                    try:
-                        idx = int(cid.split(":")[1])
-                    except Exception:
-                        idx = i
-                else:
-                    idx = i
-                existing_ids.append(idx)
+        meta = xmltodict.parse(reader.raw_metadata)
+        ds_channels = _get_display_channels(meta)
+        existing_ids = [
+            _extract_channel_index(ch, i)
+            for i, ch in enumerate(ds_channels)
+            if ch.get("@Id")
+        ]
 
     if not existing_ids:
         pytest.skip("Asset has no DisplaySetting/Channels; skipping.")
@@ -129,30 +153,14 @@ def test_builder_updates_existing_display_channels_only(czi_working_copy: str) -
 
         xml_after = editor.read_metadata_xml()
         parsed = xmltodict.parse(xml_after)
+        channels = _get_display_channels(parsed)
 
-        channels = (
-            parsed.get("ImageDocument", {})
-            .get("Metadata", {})
-            .get("DisplaySetting", {})
-            .get("Channels", {})
-            .get("Channel", [])
-        )
-        if isinstance(channels, dict):
-            channels = [channels]
-
-        def find_channel(ch_list: List[Dict[str, Any]], target_idx: int) -> Optional[Dict[str, Any]]:
-            for ch in ch_list:
-                cid = ch.get("@Id", "")
-                if cid == f"Channel:{target_idx}":
-                    return ch
-            return None
-
-        ch_after = find_channel(channels, first_idx)
+        ch_after = _find_channel(channels, first_idx)
         assert ch_after is not None
 
         assert ch_after.get("Description") == "Edited by test"
         if "IsSelected" in ch_after:
-            assert ch_after["IsSelected"] in ("true", "false")
+            assert ch_after["IsSelected"] in {"true", "false"}
         assert "BitCountRange" in ch_after or "PixelType" in ch_after
 
         ds_map = editor.read_display_settings()
@@ -200,6 +208,7 @@ def test_editor_multiple_commits(czi_working_copy: str) -> None:
 
 
 def test_set_general_document_info_partial_fields_preserves_others(czi_working_copy: str) -> None:
+    """Setting partial fields in GeneralDocumentInfo preserves other existing fields."""
     with edit_czi(czi_working_copy) as editor:
         before = xmltodict.parse(editor.read_metadata_xml())
         prev_doc = before.get("ImageDocument", {}).get("Metadata", {}).get("Information", {}).get("Document", {})
@@ -216,6 +225,7 @@ def test_set_general_document_info_partial_fields_preserves_others(czi_working_c
 
 
 def test_set_xml_invalid_content_raises(czi_working_copy: str) -> None:
+    """Setting invalid XML content raises an exception."""
     with edit_czi(czi_working_copy) as editor:
         builder = editor.create_metadata_builder()
         bad_xml = "<ImageDocument><Metadata></ImageDocument"
@@ -224,6 +234,7 @@ def test_set_xml_invalid_content_raises(czi_working_copy: str) -> None:
 
 
 def test_set_display_settings_nonexistent_channel_noop(czi_working_copy: str) -> None:
+    """Setting display settings for a nonexistent channel has no effect."""
     with edit_czi(czi_working_copy) as editor:
         builder = editor.create_metadata_builder()
 
@@ -254,6 +265,7 @@ def test_set_display_settings_nonexistent_channel_noop(czi_working_copy: str) ->
 
 
 def test_set_custom_key_value_add_and_overwrite(czi_working_copy: str) -> None:
+    """Custom key-value pairs can be added and overwritten."""
     with edit_czi(czi_working_copy) as editor:
         builder = editor.create_metadata_builder()
 
@@ -282,6 +294,7 @@ def test_set_custom_key_value_add_and_overwrite(czi_working_copy: str) -> None:
 
 
 def test_set_scaling_info_partial_fields(czi_working_copy: str) -> None:
+    """Setting partial scaling info fields works correctly."""
     with edit_czi(czi_working_copy) as editor:
         builder = editor.create_metadata_builder()
         builder.set_scaling_info(scale_x=0.123)
@@ -298,6 +311,7 @@ def test_set_scaling_info_partial_fields(czi_working_copy: str) -> None:
 
 
 def test_commit_without_changes_no_op(czi_working_copy: str) -> None:
+    """Committing without changes is a no-op."""
     with edit_czi(czi_working_copy) as editor:
         xml_before = editor.read_metadata_xml()
         builder = editor.create_metadata_builder()
@@ -307,16 +321,17 @@ def test_commit_without_changes_no_op(czi_working_copy: str) -> None:
 
 
 def test_builder_can_commit_false_after_editor_closed(czi_working_copy: str) -> None:
+    """Builder cannot commit after editor is closed."""
     editor_ctx = edit_czi(czi_working_copy)
     editor = editor_ctx.__enter__()
+    builder = editor.create_metadata_builder()
     try:
-        builder = editor.create_metadata_builder()
         editor.close()
-        assert not builder.can_commit()
-        with pytest.raises(Exception):
-            builder.commit()
     finally:
         try:
             editor_ctx.__exit__(None, None, None)
         except RuntimeError:
             pass
+        assert not builder.can_commit()
+        with pytest.raises(Exception):
+            builder.commit()
