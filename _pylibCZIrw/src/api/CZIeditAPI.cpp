@@ -1,5 +1,5 @@
 #include "CZIeditAPI.h"
-#include "CZIeditAPI.h"
+#include "CZIwriteAPI.h"
 
 using namespace libCZI;
 using namespace std;

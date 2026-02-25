@@ -1353,6 +1353,8 @@ class ChannelDisplaySettingsDataClassWithNameAndDescription(ChannelDisplaySettin
 
 @dataclass
 class GeneralDocumentInfoDto:
+    """DTO for general document information fields."""
+
     name: Optional[str] = None
     title: Optional[str] = None
     user_name: Optional[str] = None
@@ -1560,9 +1562,11 @@ class CziMetadataBuilder:
         self._native.set_display_settings(mapped)
 
     def can_commit(self) -> bool:
+        """Return True if the builder can commit changes."""
         return self._native.can_commit()
 
     def commit(self) -> None:
+        """Commit all pending changes to the CZI file."""
         self._native.commit()
 
 
@@ -1605,26 +1609,18 @@ class CziEditor:
         Returns the value as a native Python type (bool, int, float, str), or None if the variant is empty/unsupported.
         """
         variant = self._editor.read_custom_key_value(key)
-        try:
-            return variant.boolValue
-        except Exception:
-            pass
-        try:
-            return variant.int32Value
-        except Exception:
-            pass
-        try:
-            return variant.doubleValue
-        except Exception:
-            pass
-        try:
-            return variant.floatValue
-        except Exception:
-            pass
-        try:
-            return variant.stringValue
-        except Exception:
-            pass
+
+        for accessor in (
+            lambda v: v.boolValue,
+            lambda v: v.int32Value,
+            lambda v: v.doubleValue,
+            lambda v: v.floatValue,
+            lambda v: v.stringValue,
+        ):
+            try:
+                return accessor(variant)
+            except RuntimeError:
+                continue
         return None
 
     def read_general_document_info(self) -> Dict[str, Any]:
@@ -1733,12 +1729,9 @@ class CziEditor:
     def edit_session(self) -> Iterator["CziMetadataBuilder"]:
         """Context-managed edit session."""
         builder = self.begin_edit()
-        try:
-            yield builder
-            if builder.can_commit():
-                builder.commit()
-        except Exception:
-            raise
+        yield builder
+        if builder.can_commit():
+            builder.commit()
 
 
 @contextlib.contextmanager

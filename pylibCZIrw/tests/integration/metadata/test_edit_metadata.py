@@ -2,12 +2,13 @@
     
 """Integration tests for in-place metadata editing via CziEditor."""
 
+import hashlib
 import os
 import shutil
-import hashlib
-import xmltodict
-import xml.etree.ElementTree as ET
+
+import defusedxml.ElementTree as ET
 import pytest
+import xmltodict
 
 from pylibCZIrw.czi import (
     edit_czi,
@@ -315,7 +316,7 @@ def test_builder_can_commit_false_after_editor_closed(czi_working_copy: str) -> 
         with pytest.raises(Exception):
             builder.commit()
     finally:
-        try:
-            editor_ctx.__exit__(None, None, None)
-        except Exception:
-            pass
+    try:
+        editor_ctx.__exit__(None, None, None)
+    except RuntimeError:
+        pass

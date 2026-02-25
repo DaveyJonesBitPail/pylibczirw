@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <iostream>
 #include <locale>
 #include <string>
 
@@ -88,9 +89,12 @@ static int test_custom_attribute(const std::wstring &srcPath) {
   auto tmp = std::filesystem::temp_directory_path() / "cziedit_tmp2.czi";
   std::error_code ec;
   std::filesystem::copy_file(srcPath, tmp,
-  std::filesystem::copy_options::overwrite_existing, ec); 
-  if (ec) { 
-      std::cerr << "Copy failed: " << ec.message() << "\n"; return 10; }
+                             std::filesystem::copy_options::overwrite_existing,
+                             ec);
+  if (ec) {
+    std::cerr << "Copy failed: " << ec.message() << "\n";
+    return 10;
+  }
 
   CZIeditAPI editor(srcPath);
 
