@@ -90,7 +90,7 @@ CZIeditAPI::ReadCustomKeyValue(const std::string &key) const {
 
   auto kvNode = meta->GetChildNodeReadonly(path.c_str());
   if (!kvNode) {
-    return result;  // not found
+    return result; // not found
   }
 
   std::wstring typeAttrW;
@@ -177,59 +177,58 @@ CZIeditAPI::ReadDisplaySettings() const {
   }
 
   int chanIdxEnum = -1;
-  channelsNode->EnumChildren(
-      [&](std::shared_ptr<IXmlNodeRead> child) -> bool {
-        if (child && child->Name() == L"Channel") {
-          ++chanIdxEnum;
+  channelsNode->EnumChildren([&](std::shared_ptr<IXmlNodeRead> child) -> bool {
+    if (child && child->Name() == L"Channel") {
+      ++chanIdxEnum;
 
-          int channelIndex = chanIdxEnum;
-          std::wstring idAttr;
-          if (child->TryGetAttribute(L"Id", &idAttr)) {
-            const std::wstring prefix = L"Channel:";
-            if (idAttr.rfind(prefix, 0) == 0) {
-              try {
-                channelIndex = std::stoi(idAttr.substr(prefix.size()));
-              } catch (...) {
-                channelIndex = chanIdxEnum;
-              }
-            }
+      int channelIndex = chanIdxEnum;
+      std::wstring idAttr;
+      if (child->TryGetAttribute(L"Id", &idAttr)) {
+        const std::wstring prefix = L"Channel:";
+        if (idAttr.rfind(prefix, 0) == 0) {
+          try {
+            channelIndex = std::stoi(idAttr.substr(prefix.size()));
+          } catch (...) {
+            channelIndex = chanIdxEnum;
           }
-
-          std::string path = "Channel[" + std::to_string(chanIdxEnum) + "]";
-          auto chRw = channelsNode->GetChildNodeReadonly(path.c_str());
-          if (!chRw) {
-            return true;
-          }
-
-          ChannelDisplaySettingsStructWithNameAndDescription ds;
-          ds.Clear();
-
-          std::wstring nameAttr;
-          if (chRw->TryGetAttribute(L"Name", &nameAttr)) {
-            ds.name = nameAttr;
-          }
-
-          auto descNode = chRw->GetChildNodeReadonly("Description");
-          if (descNode) {
-            std::wstring descVal;
-            if (descNode->TryGetValue(&descVal)) {
-              ds.description = descVal;
-            }
-          }
-
-          auto isSelNode = chRw->GetChildNodeReadonly("IsSelected");
-          if (isSelNode) {
-            std::wstring selVal;
-            if (isSelNode->TryGetValue(&selVal)) {
-              ds.isEnabled =
-                  (selVal == L"true" || selVal == L"True" || selVal == L"1");
-            }
-          }
-
-          result.emplace(channelIndex, ds);
         }
+      }
+
+      std::string path = "Channel[" + std::to_string(chanIdxEnum) + "]";
+      auto chRw = channelsNode->GetChildNodeReadonly(path.c_str());
+      if (!chRw) {
         return true;
-      });
+      }
+
+      ChannelDisplaySettingsStructWithNameAndDescription ds;
+      ds.Clear();
+
+      std::wstring nameAttr;
+      if (chRw->TryGetAttribute(L"Name", &nameAttr)) {
+        ds.name = nameAttr;
+      }
+
+      auto descNode = chRw->GetChildNodeReadonly("Description");
+      if (descNode) {
+        std::wstring descVal;
+        if (descNode->TryGetValue(&descVal)) {
+          ds.description = descVal;
+        }
+      }
+
+      auto isSelNode = chRw->GetChildNodeReadonly("IsSelected");
+      if (isSelNode) {
+        std::wstring selVal;
+        if (isSelNode->TryGetValue(&selVal)) {
+          ds.isEnabled =
+              (selVal == L"true" || selVal == L"True" || selVal == L"1");
+        }
+      }
+
+      result.emplace(channelIndex, ds);
+    }
+    return true;
+  });
 
   return result;
 }
@@ -304,7 +303,8 @@ void PyCZIMetadataBuilder::SetCustomKeyValue(
 }
 
 void PyCZIMetadataBuilder::SetDisplaySettings(
-    const std::map<int, const ChannelDisplaySettingsStructWithNameAndDescription>
+    const std::map<int,
+                   const ChannelDisplaySettingsStructWithNameAndDescription>
         &displaySettings) {
   if (!this->spBuilder_) {
     throw std::logic_error("Builder is not initialized.");
@@ -338,7 +338,8 @@ void PyCZIMetadataBuilder::Commit() {
 
 /*static*/ void PyCZIMetadataBuilder::ApplyDisplaySettings(
     ICziMetadataBuilder *builder,
-    const std::map<int, const ChannelDisplaySettingsStructWithNameAndDescription>
+    const std::map<int,
+                   const ChannelDisplaySettingsStructWithNameAndDescription>
         &displaySettings) {
   if (displaySettings.empty()) {
     return;
@@ -356,8 +357,8 @@ void PyCZIMetadataBuilder::Commit() {
   }
 
   auto findChannelById =
-      [&channelsNode](const std::wstring &channelId)
-      -> std::shared_ptr<IXmlNodeRw> {
+      [&channelsNode](
+          const std::wstring &channelId) -> std::shared_ptr<IXmlNodeRw> {
     int idx = 0;
     int targetIdx = -1;
 
@@ -365,8 +366,7 @@ void PyCZIMetadataBuilder::Commit() {
         [&](std::shared_ptr<IXmlNodeRead> child) -> bool {
           if (child && child->Name() == L"Channel") {
             std::wstring idAttr;
-            if (child->TryGetAttribute(L"Id", &idAttr) &&
-                idAttr == channelId) {
+            if (child->TryGetAttribute(L"Id", &idAttr) && idAttr == channelId) {
               targetIdx = idx;
               return false;
             }

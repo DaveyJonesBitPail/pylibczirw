@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include "CZIwriteAPI.h"
 #include "PImage.h"
 #include "inc_libCzi.h"
@@ -14,8 +13,8 @@
 /// descriptions. It allows for easy modification of the information.
 struct ChannelDisplaySettingsStructWithNameAndDescription
     : ChannelDisplaySettingsStruct {
-  std::wstring name;         ///< The name of the channel.
-  std::wstring description;  ///< The description of the channel.
+  std::wstring name;        ///< The name of the channel.
+  std::wstring description; ///< The description of the channel.
 
   /// Sets the structure to a defined standard value - not enabled, no tinting,
   /// linear gradation-curve and black-point to zero, white-point to one, and
@@ -34,16 +33,16 @@ class CZIeditAPI;
 /// is called. This class wraps libCZI::ICziMetadataBuilder and adds lifecycle
 /// management.
 class PyCZIMetadataBuilder {
-  friend class CZIeditAPI;  // Allow CZIeditAPI to construct instances
+  friend class CZIeditAPI; // Allow CZIeditAPI to construct instances
 
- private:
+private:
   std::shared_ptr<libCZI::ICziMetadataBuilder> spBuilder_;
   std::weak_ptr<libCZI::ICziReaderWriter> wpReaderWriter_;
 
   PyCZIMetadataBuilder(std::shared_ptr<libCZI::ICziMetadataBuilder> builder,
                        std::shared_ptr<libCZI::ICziReaderWriter> readerWriter);
 
- public:
+public:
   ~PyCZIMetadataBuilder() = default;
 
   PyCZIMetadataBuilder(const PyCZIMetadataBuilder &) = delete;
@@ -99,7 +98,7 @@ class PyCZIMetadataBuilder {
   /// \returns True if Commit() can be called successfully.
   bool CanCommit() const;
 
- private:
+private:
   /// Apply display settings to a builder (shared implementation).
   static void ApplyDisplaySettings(
       libCZI::ICziMetadataBuilder *builder,
@@ -113,7 +112,7 @@ class PyCZIMetadataBuilder {
 class CZIeditAPI {
   std::shared_ptr<libCZI::ICziReaderWriter> spReaderWriter_;
 
- public:
+public:
   /// Open an existing CZI file for in-place metadata editing.
   /// \param fileName Path to an existing CZI file.
   explicit CZIeditAPI(const std::wstring &fileName);

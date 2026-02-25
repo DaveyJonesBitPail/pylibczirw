@@ -5,14 +5,14 @@ This czi document can be used to read and write czi.
 """
 
 import contextlib
-import uuid
+
 from dataclasses import dataclass
 from enum import Enum
+import numpy as np
 from os import makedirs
 from os.path import abspath, dirname, isfile
 from typing import Any, Callable, Dict, Generator, NamedTuple, Iterator, Optional, Tuple, Union
-
-import numpy as np
+import uuid
 import validators
 import xmltodict
 

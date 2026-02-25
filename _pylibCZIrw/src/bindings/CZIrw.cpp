@@ -256,20 +256,26 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
              const std::optional<std::wstring> &keywords,
              const std::optional<double> &rating) {
             libCZI::GeneralDocumentInfo info;
-            if (name) info.SetName(*name);
-            if (title) info.SetTitle(*title);
-            if (userName) info.SetUserName(*userName);
-            if (description) info.SetDescription(*description);
-            if (comment) info.SetComment(*comment);
-            if (keywords) info.SetKeywords(*keywords);
-            if (rating) info.SetRating(*rating);
+            if (name)
+              info.SetName(*name);
+            if (title)
+              info.SetTitle(*title);
+            if (userName)
+              info.SetUserName(*userName);
+            if (description)
+              info.SetDescription(*description);
+            if (comment)
+              info.SetComment(*comment);
+            if (keywords)
+              info.SetKeywords(*keywords);
+            if (rating)
+              info.SetRating(*rating);
             self.SetGeneralDocumentInfo(info);
           },
           py::arg("name") = py::none(), py::arg("title") = py::none(),
           py::arg("user_name") = py::none(),
-          py::arg("description") = py::none(),
-          py::arg("comment") = py::none(), py::arg("keywords") = py::none(),
-          py::arg("rating") = py::none(),
+          py::arg("description") = py::none(), py::arg("comment") = py::none(),
+          py::arg("keywords") = py::none(), py::arg("rating") = py::none(),
           "Set general document information fields")
       .def(
           "set_scaling_info",
@@ -277,9 +283,12 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
              const std::optional<double> &scale_y,
              const std::optional<double> &scale_z) {
             libCZI::ScalingInfo info;
-            if (scale_x) info.scaleX = *scale_x;
-            if (scale_y) info.scaleY = *scale_y;
-            if (scale_z) info.scaleZ = *scale_z;
+            if (scale_x)
+              info.scaleX = *scale_x;
+            if (scale_y)
+              info.scaleY = *scale_y;
+            if (scale_z)
+              info.scaleZ = *scale_z;
             self.SetScalingInfo(info);
           },
           py::arg("scale_x") = py::none(), py::arg("scale_y") = py::none(),
@@ -328,10 +337,9 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
       .def_readwrite(
           "description",
           &ChannelDisplaySettingsStructWithNameAndDescription::description)
-      .def_readwrite(
-          "name", &ChannelDisplaySettingsStructWithNameAndDescription::name)
-      .def("Clear",
-           &ChannelDisplaySettingsStructWithNameAndDescription::Clear);
+      .def_readwrite("name",
+                     &ChannelDisplaySettingsStructWithNameAndDescription::name)
+      .def("Clear", &ChannelDisplaySettingsStructWithNameAndDescription::Clear);
 
   // CZIeditAPI bindings
   py::class_<CZIeditAPI>(m, "czi_editor", py::module_local())
@@ -346,14 +354,20 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
           [](const CZIeditAPI &self) -> py::dict {
             auto info = self.ReadGeneralDocumentInfo();
             py::dict result;
-            if (info.name_valid) result["name"] = info.name;
-            if (info.title_valid) result["title"] = info.title;
-            if (info.userName_valid) result["user_name"] = info.userName;
+            if (info.name_valid)
+              result["name"] = info.name;
+            if (info.title_valid)
+              result["title"] = info.title;
+            if (info.userName_valid)
+              result["user_name"] = info.userName;
             if (info.description_valid)
               result["description"] = info.description;
-            if (info.comment_valid) result["comment"] = info.comment;
-            if (info.keywords_valid) result["keywords"] = info.keywords;
-            if (info.rating_valid) result["rating"] = info.rating;
+            if (info.comment_valid)
+              result["comment"] = info.comment;
+            if (info.keywords_valid)
+              result["keywords"] = info.keywords;
+            if (info.rating_valid)
+              result["rating"] = info.rating;
             if (info.creationDateTime_valid)
               result["creation_date_time"] = info.creationDateTime;
             return result;

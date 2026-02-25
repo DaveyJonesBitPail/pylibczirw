@@ -129,9 +129,6 @@ def test_create_metadata_builder_exposes_expected_api(monkeypatch):
         assert hasattr(b, name)
 
 
-def test_make_channel_display_setting_with_description_sets_fields(monkeypatch):
-"""Test that make_channel_display_setting_with_description sets all fields correctly."""
-
 class FakeStruct:
     """Fake struct for testing display settings."""
 
