@@ -171,11 +171,11 @@ class CziReader:
     }
 
     def __init__(
-            self,
-            filepath: str,
-            file_input_type: ReaderFileInputTypes = ReaderFileInputTypes.Standard,
-            cache_options: Optional[CacheOptions] = None,
-            reader_options: Optional[ReaderOptions] = None,
+        self,
+        filepath: str,
+        file_input_type: ReaderFileInputTypes = ReaderFileInputTypes.Standard,
+        cache_options: Optional[CacheOptions] = None,
+        reader_options: Optional[ReaderOptions] = None,
     ) -> None:
         """Creates a czi reader object, should only be called through the open_czi() function.
 
@@ -256,7 +256,7 @@ class CziReader:
 
     @staticmethod
     def _compute_index_ranges(
-            rectangle: _pylibCZIrw.IntRect,
+        rectangle: _pylibCZIrw.IntRect,
     ) -> Dict[str, Tuple[int, int]]:
         """From a bounding rectangle (_pylibCZIrw.IntRect object, which is a struct with (x, y, h, w),
         returns the X Y index ranges.
@@ -347,8 +347,8 @@ class CziReader:
         return total_bounding_box_layer0
 
     def _extract_scenes_bounding_rectangles(
-            self,
-            extract_scene_bounding_box: Callable[[_pylibCZIrw.BoundingBoxes], Rectangle],
+        self,
+        extract_scene_bounding_box: Callable[[_pylibCZIrw.BoundingBoxes], Rectangle],
     ) -> Dict[int, Rectangle]:
         """Get the bounding rectangle of all scenes in the document and returns it
         in a dictionary where scene indexes are the keys and the bounding rectangles the values.
@@ -664,9 +664,9 @@ class CziReader:
         return _pylibCZIrw.PixelType(pixel_id)
 
     def _create_roi(
-            self,
-            roi: Optional[Rectangle],
-            scene: Optional[int],
+        self,
+        roi: Optional[Rectangle],
+        scene: Optional[int],
     ) -> Rectangle:
         """Generates roi or adapt it if needed and returns it.
 
@@ -717,8 +717,8 @@ class CziReader:
         }
 
     def _create_plane_coords(
-            self,
-            plane: Optional[Dict[str, int]],
+        self,
+        plane: Optional[Dict[str, int]],
     ) -> Dict[str, int]:
         """Generates valid plane coordinates from the one specified. if plane is None, plane coordinates will be
         generated with all first indexes of each dimension. Otherwise, will keep the valid coordinates specified in
@@ -744,9 +744,9 @@ class CziReader:
         return default_plane
 
     def _get_pixel_type(
-            self,
-            pixel_type: Optional[str],
-            plane: Dict[str, int],
+        self,
+        pixel_type: Optional[str],
+        plane: Dict[str, int],
     ) -> str:
         """Get pixel_type of the specified plane if needed, otherwise returns the pixel_type provided by the user.
 
@@ -770,8 +770,8 @@ class CziReader:
 
     @classmethod
     def _get_array_from_bitmap(
-            cls,
-            pixel_data: _pylibCZIrw.PImage,
+        cls,
+        pixel_data: _pylibCZIrw.PImage,
     ) -> np.ndarray:
         """Converts the bitmap stored in pixel_data to a np.array and creates a color channel.
         In the buffer pointed by pixel_data, the values are not regrouped in a specific color channel, that's why we
@@ -801,13 +801,13 @@ class CziReader:
         return self._czi_reader.GetCacheInfo()
 
     def read(
-            self,
-            roi: Optional[Union[Tuple[int, int, int, int], Rectangle]] = None,
-            plane: Optional[Dict[str, int]] = None,
-            scene: Optional[int] = None,
-            zoom: Optional[float] = None,
-            pixel_type: Optional[str] = None,
-            background_pixel: Union[Tuple[float, float, float], Color] = BLACK_COLOR,
+        self,
+        roi: Optional[Union[Tuple[int, int, int, int], Rectangle]] = None,
+        plane: Optional[Dict[str, int]] = None,
+        scene: Optional[int] = None,
+        zoom: Optional[float] = None,
+        pixel_type: Optional[str] = None,
+        background_pixel: Union[Tuple[float, float, float], Color] = BLACK_COLOR,
     ) -> np.ndarray:
         """Access Pixel data of the CziReader document and returns it as a np.ndarray
 
@@ -1128,16 +1128,16 @@ class CziWriter:
             for j in range(num_rows):
                 right = None if i == num_cols - 1 else (width // num_cols) * (i + 1)
                 bottom = None if j == num_rows - 1 else (length // num_rows) * (j + 1)
-                subdata = data[(width // num_cols) * i: right, (length // num_rows) * j: bottom]
+                subdata = data[(width // num_cols) * i : right, (length // num_rows) * j : bottom]
                 yield subdata
 
     def write(
-            self,
-            data: np.ndarray,
-            location: Tuple[int, int] = (0, 0),
-            plane: Optional[Dict[str, int]] = None,
-            compression_options: Optional[str] = None,
-            scene: int = 0,
+        self,
+        data: np.ndarray,
+        location: Tuple[int, int] = (0, 0),
+        plane: Optional[Dict[str, int]] = None,
+        compression_options: Optional[str] = None,
+        scene: int = 0,
     ) -> bool:
         """Write Pixel data to the CziWriter document.
 
@@ -1172,23 +1172,23 @@ class CziWriter:
             location_libczi = Location(curr_x, curr_y)
             if compression_options is None:
                 if not self._czi_writer.AddTile(
-                        plane_libczi,
-                        data_libczi,
-                        location_libczi.x,
-                        location_libczi.y,
-                        m_index,
-                        retiling_id,
+                    plane_libczi,
+                    data_libczi,
+                    location_libczi.x,
+                    location_libczi.y,
+                    m_index,
+                    retiling_id,
                 ):
                     return False
             else:
                 if not self._czi_writer.AddTileEx(  # pylint: disable=confusing-consecutive-elif, else-if-used
-                        plane_libczi,
-                        data_libczi,
-                        location_libczi.x,
-                        location_libczi.y,
-                        m_index,
-                        compression_options,
-                        retiling_id,
+                    plane_libczi,
+                    data_libczi,
+                    location_libczi.x,
+                    location_libczi.y,
+                    m_index,
+                    compression_options,
+                    retiling_id,
                 ):
                     return False
             curr_x += subarray.shape[1]
@@ -1228,7 +1228,7 @@ class CziWriter:
 
     @staticmethod
     def _create_display_setting(
-            value: ChannelDisplaySettingsDataClass,
+        value: ChannelDisplaySettingsDataClass,
     ) -> _pylibCZIrw.ChannelDisplaySettingsStruct:
         """Convert the ChannelDisplaySettingsDataClass value into a ChannelDisplaySettingsPOD object
 
@@ -1260,14 +1260,14 @@ class CziWriter:
         return channel_display_setting
 
     def write_metadata(
-            self,
-            document_name: Optional[str] = "CZI",
-            channel_names: Optional[Dict[int, str]] = None,
-            scale_x: Optional[float] = 0.0,
-            scale_y: Optional[float] = 0.0,
-            scale_z: Optional[float] = 0.0,
-            custom_attributes: Optional[Dict[str, Union[int, float, bool, str]]] = None,
-            display_settings: Optional[Dict[int, ChannelDisplaySettingsDataClass]] = None,
+        self,
+        document_name: Optional[str] = "CZI",
+        channel_names: Optional[Dict[int, str]] = None,
+        scale_x: Optional[float] = 0.0,
+        scale_y: Optional[float] = 0.0,
+        scale_z: Optional[float] = 0.0,
+        custom_attributes: Optional[Dict[str, Union[int, float, bool, str]]] = None,
+        display_settings: Optional[Dict[int, ChannelDisplaySettingsDataClass]] = None,
     ) -> None:
         """Generates and write metadata according to all data writen so far in the CZI document.
         Channels names can be specified optionally.
@@ -1296,19 +1296,20 @@ class CziWriter:
             Display settings that are not written will be set as 'empty', regardless of if they
             initially existed for that channel.
         """
+
         channel_names = channel_names or {}
         display_settings_dict = {}
         if display_settings:
             for (
-                    display_settings_key,
-                    display_settings_value,
+                display_settings_key,
+                display_settings_value,
             ) in display_settings.items():
                 display_settings_dict[display_settings_key] = self._create_display_setting(display_settings_value)
         custom_attributes_dict = {}
         if custom_attributes:
             for (
-                    custom_attributes_key,
-                    custom_attributes_value,
+                custom_attributes_key,
+                custom_attributes_value,
             ) in custom_attributes.items():
                 custom_attributes_dict[custom_attributes_key] = self._create_customvalue(custom_attributes_value)
         self._czi_writer.WriteMetadata(
@@ -1340,6 +1341,7 @@ class ScalingInfoDto:
     scale_z : Optional[float]
         Pixel size along Z.
     """
+
     scale_x: Optional[float] = None
     scale_y: Optional[float] = None
     scale_z: Optional[float] = None
@@ -1357,6 +1359,7 @@ class ChannelDisplaySettingsDataClassWithNameAndDescription(ChannelDisplaySettin
       behave as in `ChannelDisplaySettingsDataClass`.
     - `name` and `description` are optional; omit or set None to leave unchanged on edit.
     """
+
     name: Optional[str] = None
     description: Optional[str] = None
 
@@ -1416,16 +1419,16 @@ class CziMetadataBuilder:
         self._native.set_xml(xml_string)
 
     def set_general_document_info(
-            self,
-            info: Optional[GeneralDocumentInfoDto] = None,
-            *,
-            name: Optional[str] = None,
-            title: Optional[str] = None,
-            user_name: Optional[str] = None,
-            description: Optional[str] = None,
-            comment: Optional[str] = None,
-            keywords: Optional[str] = None,
-            rating: Optional[float] = None,
+        self,
+        info: Optional[GeneralDocumentInfoDto] = None,
+        *,
+        name: Optional[str] = None,
+        title: Optional[str] = None,
+        user_name: Optional[str] = None,
+        description: Optional[str] = None,
+        comment: Optional[str] = None,
+        keywords: Optional[str] = None,
+        rating: Optional[float] = None,
     ) -> None:
         """Update general document fields.
 
@@ -1473,12 +1476,12 @@ class CziMetadataBuilder:
         self._native.set_general_document_info(**args)
 
     def set_scaling_info(
-            self,
-            scaling: Optional[ScalingInfoDto] = None,
-            *,
-            scale_x: Optional[float] = None,
-            scale_y: Optional[float] = None,
-            scale_z: Optional[float] = None,
+        self,
+        scaling: Optional[ScalingInfoDto] = None,
+        *,
+        scale_x: Optional[float] = None,
+        scale_y: Optional[float] = None,
+        scale_z: Optional[float] = None,
     ) -> None:
         """Update scaling (pixel size in the existing unit, typically µm).
 
@@ -1525,11 +1528,11 @@ class CziMetadataBuilder:
         self._native.set_custom_key_value(key, cv)
 
     def set_display_settings(
-            self,
-            display_settings: Dict[
-                int,
-                Union[ChannelDisplaySettingsDataClass, ChannelDisplaySettingsDataClassWithNameAndDescription],
-            ],
+        self,
+        display_settings: Dict[
+            int,
+            Union[ChannelDisplaySettingsDataClass, ChannelDisplaySettingsDataClassWithNameAndDescription],
+        ],
     ) -> None:
         """Update per-channel display settings.
 
@@ -1551,10 +1554,7 @@ class CziMetadataBuilder:
         )
 
         def to_pod(
-                ds_py: Union[
-                    ChannelDisplaySettingsDataClass,
-                    ChannelDisplaySettingsDataClassWithNameAndDescription
-                ]
+            ds_py: Union[ChannelDisplaySettingsDataClass, ChannelDisplaySettingsDataClassWithNameAndDescription]
         ) -> ChannelDisplaySettingsStructWithNameAndDescription:
             pod = ChannelDisplaySettingsStructWithNameAndDescription()
             pod.Clear()
@@ -1564,8 +1564,8 @@ class CziMetadataBuilder:
             pod.tintingColor.r = ds_py.tinting_color.r
             pod.tintingColor.g = ds_py.tinting_color.g
             pod.tintingColor.b = ds_py.tinting_color.b
-            pod.tintingMode = TintingModeEnum.Color if ds_py.tinting_mode == TintingMode.Color else getattr(
-                TintingModeEnum, "None"
+            pod.tintingMode = (
+                TintingModeEnum.Color if ds_py.tinting_mode == TintingMode.Color else getattr(TintingModeEnum, "None")
             )
             pod.description = getattr(ds_py, "description", None) or ""
             pod.name = getattr(ds_py, "name", None) or ""
@@ -1624,11 +1624,11 @@ class CziEditor:
         variant = self._editor.read_custom_key_value(key)
 
         for accessor in (
-                lambda v: v.boolValue,
-                lambda v: v.int32Value,
-                lambda v: v.doubleValue,
-                lambda v: v.floatValue,
-                lambda v: v.stringValue,
+            lambda v: v.boolValue,
+            lambda v: v.int32Value,
+            lambda v: v.doubleValue,
+            lambda v: v.floatValue,
+            lambda v: v.stringValue,
         ):
             try:
                 return accessor(variant)
@@ -1677,7 +1677,7 @@ class CziEditor:
         native_map = self._editor.read_display_settings()
 
         def to_dto(
-                pod: "_pylibCZIrw.ChannelDisplaySettingsStructWithNameAndDescription"
+            pod: "_pylibCZIrw.ChannelDisplaySettingsStructWithNameAndDescription"
         ) -> ChannelDisplaySettingsDataClassWithNameAndDescription:
             # map native tinting-mode enum to Python TintingMode
             tinting_enum_color = _pylibCZIrw.TintingModeEnum.Color
@@ -1711,12 +1711,12 @@ class CziEditor:
 
     @staticmethod
     def make_channel_display_setting_with_description(
-            is_enabled: bool,
-            tinting_mode: TintingMode,
-            tinting_color: Rgb8Color,
-            black_point: float,
-            white_point: float,
-            description: str,
+        is_enabled: bool,
+        tinting_mode: TintingMode,
+        tinting_color: Rgb8Color,
+        black_point: float,
+        white_point: float,
+        description: str,
     ) -> "_pylibCZIrw.ChannelDisplaySettingsStructWithDescription":
         """Helper to build ChannelDisplaySettingsStructWithDescription from Python datatypes."""
         pod = _pylibCZIrw.ChannelDisplaySettingsStructWithDescription()
@@ -1749,11 +1749,11 @@ class CziEditor:
 
 @contextlib.contextmanager
 def open_czi(
-        filepath: str,
-        file_input_type: ReaderFileInputTypes = ReaderFileInputTypes.Standard,
-        cache_options: Optional[CacheOptions] = None,
-        *,
-        reader_options: Optional[ReaderOptions] = None,
+    filepath: str,
+    file_input_type: ReaderFileInputTypes = ReaderFileInputTypes.Standard,
+    cache_options: Optional[CacheOptions] = None,
+    *,
+    reader_options: Optional[ReaderOptions] = None,
 ) -> Generator[CziReader, None, None]:
     """Initialize a czi reader object and returns it.
     Opens the filepath and hands it over to the low-level function.
@@ -1790,7 +1790,7 @@ def open_czi(
 
 @contextlib.contextmanager
 def create_czi(
-        filepath: str, exist_ok: bool = False, compression_options: Optional[str] = None
+    filepath: str, exist_ok: bool = False, compression_options: Optional[str] = None
 ) -> Generator[CziWriter, None, None]:
     """Initialize a czi writer object and returns it. Opens the filepath and hands it over to the low-level function.
 

@@ -139,6 +139,7 @@ class FakeStruct:
                 self.r = None
                 self.g = None
                 self.b = None
+
         self._cleared = False
         self.isEnabled = None
         self.blackPoint = None
