@@ -1394,9 +1394,25 @@ class CziMetadataBuilder:
     def _filter_none(d: Dict[str, Any]) -> Dict[str, Any]:
         return {k: v for k, v in d.items() if v is not None}
 
-    def get_xml(self) -> str:
-        """Get the current metadata XML."""
-        return self._native.get_xml()
+    def get_xml(self, prettify: bool = False) -> str:
+        """Get the current metadata XML.
+
+        Parameters
+        ----------
+        prettify : bool, optional
+            If True, return pretty-printed XML where supported by the native implementation.
+        """
+        return self._native.get_xml(prettify)
+
+    def set_xml(self, xml_string: str) -> None:
+        """Replace the entire metadata XML content.
+
+        Parameters
+        ----------
+        xml_string : str
+            The new XML content to set.
+        """
+        self._native.set_xml(xml_string)
 
     def set_general_document_info(
         self,
