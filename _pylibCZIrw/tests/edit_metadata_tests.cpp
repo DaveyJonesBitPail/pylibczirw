@@ -1,4 +1,3 @@
-#include <iostream>
 #include <codecvt>
 #include <cstdio>
 #include <cstdlib>
@@ -32,9 +31,8 @@ static int test_open_close_and_read_xml(const std::wstring &path) {
 static int test_commit_title_change(const std::wstring &srcPath) {
   auto tmp = std::filesystem::temp_directory_path() / "cziedit_tmp1.czi";
   std::error_code ec;
-  std::filesystem::copy_file(srcPath, tmp,
-                             std::filesystem::copy_options::overwrite_existing,
-                             ec);
+  std::filesystem::copy_file(
+      srcPath, tmp, std::filesystem::copy_options::overwrite_existing, ec);
   if (ec) {
     std::cerr << "Copy failed: " << ec.message() << "\n";
     return 10;
@@ -63,9 +61,8 @@ static int test_commit_title_change(const std::wstring &srcPath) {
 static int test_channel_info(const std::wstring &srcPath) {
   auto tmp = std::filesystem::temp_directory_path() / "cziedit_tmp2.czi";
   std::error_code ec;
-  std::filesystem::copy_file(srcPath, tmp,
-                             std::filesystem::copy_options::overwrite_existing,
-                             ec);
+  std::filesystem::copy_file(
+      srcPath, tmp, std::filesystem::copy_options::overwrite_existing, ec);
   if (ec) {
     std::cerr << "Copy failed: " << ec.message() << "\n";
     return 10;
@@ -88,9 +85,8 @@ static int test_channel_info(const std::wstring &srcPath) {
 static int test_custom_attribute(const std::wstring &srcPath) {
   auto tmp = std::filesystem::temp_directory_path() / "cziedit_tmp2.czi";
   std::error_code ec;
-  std::filesystem::copy_file(srcPath, tmp,
-                             std::filesystem::copy_options::overwrite_existing,
-                             ec);
+  std::filesystem::copy_file(
+      srcPath, tmp, std::filesystem::copy_options::overwrite_existing, ec);
   if (ec) {
     std::cerr << "Copy failed: " << ec.message() << "\n";
     return 10;
@@ -125,6 +121,7 @@ int main(int argc, char *argv[]) {
   rc |= test_commit_title_change(path);
   rc |= test_channel_info(path);
   rc |= test_custom_attribute(path);
-  if (rc != 0) std::cerr << "One or more editor tests failed.\n";
+  if (rc != 0)
+    std::cerr << "One or more editor tests failed.\n";
   return rc;
 }
