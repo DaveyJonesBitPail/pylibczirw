@@ -396,8 +396,7 @@ void PyCZIMetadataBuilder::Commit() {
     }
 
     if (!ds.name.empty()) {
-      auto nameNode = chRw->GetOrCreateChildNode("Name");
-      nameNode->SetValue(ds.name.c_str());
+      chRw->SetAttribute(L"Name", ds.name.c_str());
     }
 
     if (!ds.description.empty()) {
