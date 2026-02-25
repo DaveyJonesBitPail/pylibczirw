@@ -1436,8 +1436,20 @@ class CziMetadataBuilder:
         ----------
         info : Optional[GeneralDocumentInfoDto]
             DTO whose non-None fields are applied.
-        name, title, user_name, description, comment, keywords, rating : Optional
-            Keyword fields override the DTO when provided.
+        name : Optional[str]
+            Document name. Overrides DTO when provided.
+        title : Optional[str]
+            Document title. Overrides DTO when provided.
+        user_name : Optional[str]
+            User name. Overrides DTO when provided.
+        description : Optional[str]
+            Document description. Overrides DTO when provided.
+        comment : Optional[str]
+            Document comment. Overrides DTO when provided.
+        keywords : Optional[str]
+            Document keywords. Overrides DTO when provided.
+        rating : Optional[float]
+            Document rating. Overrides DTO when provided.
 
         Examples
         --------
@@ -1489,8 +1501,12 @@ class CziMetadataBuilder:
         ----------
         scaling : Optional[ScalingInfoDto]
             DTO whose non-None fields are applied.
-        scale_x, scale_y, scale_z : Optional[float]
-            Keyword fields override the DTO when provided.
+        scale_x : Optional[float]
+            X-axis scale. Overrides DTO when provided.
+        scale_y : Optional[float]
+            Y-axis scale. Overrides DTO when provided.
+        scale_z : Optional[float]
+            Z-axis scale. Overrides DTO when provided.
 
         Examples
         --------
@@ -1548,6 +1564,7 @@ class CziMetadataBuilder:
         - Optional `name` and `description` are applied when present.
         - `is_enabled` updates selection for channels.
         """
+        # pylint: disable=import-outside-toplevel,no-name-in-module
         from _pylibCZIrw import (
             ChannelDisplaySettingsStructWithNameAndDescription,
             TintingModeEnum,
@@ -1677,7 +1694,7 @@ class CziEditor:
         native_map = self._editor.read_display_settings()
 
         def to_dto(
-            pod: "_pylibCZIrw.ChannelDisplaySettingsStructWithNameAndDescription"
+            pod: "_pylibCZIrw.ChannelDisplaySettingsStructWithNameAndDescription",
         ) -> ChannelDisplaySettingsDataClassWithNameAndDescription:
             # map native tinting-mode enum to Python TintingMode
             tinting_enum_color = _pylibCZIrw.TintingModeEnum.Color

@@ -35,7 +35,7 @@ def czi_working_copy(tmp_path: Path) -> str:
     src = CZI_DOCUMENT_TEST1
     dst = tmp_path / "work.czi"
     shutil.copy2(src, dst)
-    pytest.original_hash = _sha256(src)  # type: ignore[attr-defined]
+    pytest.original_hash = _sha256(src)
     return str(dst)
 
 

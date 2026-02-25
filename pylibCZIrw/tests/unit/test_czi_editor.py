@@ -9,13 +9,13 @@ from pylibCZIrw import czi as czi_mod
 
 
 class FakeBuilder:
-    """Fake builder for testing CziMetadataBuilder wrapper."""
+"""Fake builder for testing CziMetadataBuilder wrapper."""
 
-    def __init__(self) -> None:
-        self._xml = "<ImageDocument/>"
-        self._gdi: Dict[str, Any] = {}
-        self._ds: Dict[str, Any] = {}
-        self._sc: Dict[str, Any] = {}
+def __init__(self) -> None:
+    self._xml = "<ImageDocument/>"
+    self._gdi: Dict[str, Any] = {}
+    self._ds: Dict[int, Any] = {}
+    self._sc: Dict[str, Any] = {}
         self._kv: Optional[Tuple[str, str]] = None
 
     def get_xml(self, prettify: bool = False) -> str:  # pylint: disable=unused-argument
