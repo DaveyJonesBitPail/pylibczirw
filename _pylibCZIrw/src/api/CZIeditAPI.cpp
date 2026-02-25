@@ -1,6 +1,5 @@
 #include "CZIeditAPI.h"
 #include "CZIwriteAPI.h"
-#include <codecvt>
 
 using namespace libCZI;
 using namespace std;
@@ -98,8 +97,7 @@ libCZI::CustomValueVariant CZIeditAPI::ReadCustomKeyValue(const std::string& key
     if (!hasType) {
         std::wstring wval;
         if (kvNode->TryGetValue(&wval)) {
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-            result.SetString(conv.to_bytes(wval));
+            result.SetString(Utils::ConvertToUtf8(wval));
         }
         return result;
     }
@@ -135,16 +133,14 @@ libCZI::CustomValueVariant CZIeditAPI::ReadCustomKeyValue(const std::string& key
     if (typeAttrW == L"String") {
         std::wstring wval;
         if (kvNode->TryGetValue(&wval)) {
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-            result.SetString(conv.to_bytes(wval));
+            result.SetString(Utils::ConvertToUtf8(wval));
         }
         return result;
     }
 
     std::wstring wval;
     if (kvNode->TryGetValue(&wval)) {
-        std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-        result.SetString(conv.to_bytes(wval));
+        result.SetString(Utils::ConvertToUtf8(wval));
     }
     return result;
 }
