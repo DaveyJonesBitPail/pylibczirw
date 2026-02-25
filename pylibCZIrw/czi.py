@@ -1362,6 +1362,18 @@ def _to_channel_display_pod(value: Union[ChannelDisplaySettingsDataClass, Channe
     pod.description = getattr(value, "name", None) or ""
     return pod
 
+@dataclass
+class GeneralDocumentInfoDto:
+    name: Optional[str] = None
+    title: Optional[str] = None
+    user_name: Optional[str] = None
+    description: Optional[str] = None
+    comment: Optional[str] = None
+    keywords: Optional[str] = None
+    rating: Optional[float] = None
+    creation_date_time: Optional[str] = None
+
+
 class CziMetadataBuilder:
     """CziMetadataBuilder.
 
@@ -1815,18 +1827,3 @@ def edit_czi(filepath: str) -> Generator[CziEditor, None, None]:
         yield editor
     finally:
         editor.close()
-
-
-from dataclasses import dataclass
-from typing import Optional
-
-@dataclass
-class GeneralDocumentInfoDto:
-    name: Optional[str] = None
-    title: Optional[str] = None
-    user_name: Optional[str] = None
-    description: Optional[str] = None
-    comment: Optional[str] = None
-    keywords: Optional[str] = None
-    rating: Optional[float] = None
-    creation_date_time: Optional[str] = None
