@@ -1,29 +1,19 @@
 """Integration tests for in-place metadata editing via CziEditor."""
-    
-"""Integration tests for in-place metadata editing via CziEditor."""
 
-import defusedxml.ElementTree as ET
 import hashlib
 import os
-
-from pylibCZIrw.czi import (
-    edit_czi,
-    open_czi,
-    Rgb8Color,
-    TintingMode,
-    ChannelDisplaySettingsDataClassWithNameAndDescription,
-)
-
-import pytest
 import shutil
+
+import defusedxml.ElementTree as ET
+import pytest
 import xmltodict
 
 from pylibCZIrw.czi import (
-    edit_czi,
-    open_czi,
+    ChannelDisplaySettingsDataClassWithNameAndDescription,
     Rgb8Color,
     TintingMode,
-    ChannelDisplaySettingsDataClassWithNameAndDescription,
+    edit_czi,
+    open_czi,
 )
 
 working_dir = os.path.dirname(os.path.abspath(__file__))

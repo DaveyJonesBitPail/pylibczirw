@@ -1,6 +1,7 @@
 """Module implementing unit tests for the CziEditor class"""
 
 import types
+
 import pytest
 
 from pylibCZIrw import czi as czi_mod

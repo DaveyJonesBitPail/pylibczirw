@@ -5,15 +5,26 @@ This czi document can be used to read and write czi.
 """
 
 import contextlib
-import numpy as np
 import uuid
-import validators
-import xmltodict
 from dataclasses import dataclass
 from enum import Enum
 from os import makedirs
 from os.path import abspath, dirname, isfile
-from typing import Any, Callable, Dict, Generator, NamedTuple, Iterator, Optional, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Iterator,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Union,
+)
+
+import numpy as np
+import validators
+import xmltodict
 
 import _pylibCZIrw
 
@@ -1534,7 +1545,10 @@ class CziMetadataBuilder:
         - Optional `name` and `description` are applied when present.
         - `is_enabled` updates selection for channels.
         """
-        from _pylibCZIrw import ChannelDisplaySettingsStructWithNameAndDescription, TintingModeEnum
+        from _pylibCZIrw import (
+            ChannelDisplaySettingsStructWithNameAndDescription,
+            TintingModeEnum,
+        )
 
         def to_pod(
                 ds_py: Union[
