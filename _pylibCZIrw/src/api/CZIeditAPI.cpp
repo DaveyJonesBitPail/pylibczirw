@@ -79,7 +79,7 @@ libCZI::CustomValueVariant CZIeditAPI::ReadCustomKeyValue(const std::string& key
         throw std::logic_error("Unable to find the root node.");
     }
 
-    std::string path = "Metadata/Information/CustomAttributes/KeyValue/";
+    std::string path = "ImageDocument/Metadata/Information/CustomAttributes/KeyValue/";
     path += key;
 
     auto kvNode = meta->GetChildNodeReadonly(path.c_str());
@@ -99,35 +99,35 @@ libCZI::CustomValueVariant CZIeditAPI::ReadCustomKeyValue(const std::string& key
         return result;
     }
 
-    if (typeAttrW == L"boolean") {
+    if (typeAttrW == L"Boolean") {
         bool b;
         if (kvNode->TryGetValueAsBool(&b)) {
             result.SetBool(b);
         }
         return result;
     }
-    if (typeAttrW == L"int32") {
+    if (typeAttrW == L"Int32") {
         std::int32_t i;
         if (kvNode->TryGetValueAsInt32(&i)) {
             result.SetInt32(i);
         }
         return result;
     }
-    if (typeAttrW == L"double") {
+    if (typeAttrW == L"Double") {
         double d;
         if (kvNode->TryGetValueAsDouble(&d)) {
             result.SetDouble(d);
         }
         return result;
     }
-    if (typeAttrW == L"float") {
+    if (typeAttrW == L"Float") {
         float f;
         if (kvNode->TryGetValueAsFloat(&f)) {
             result.SetFloat(f);
         }
         return result;
     }
-    if (typeAttrW == L"string") {
+    if (typeAttrW == L"String") {
         std::wstring wval;
         if (kvNode->TryGetValue(&wval)) {
             std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
@@ -322,44 +322,6 @@ void PyCZIMetadataBuilder::Commit() {
     wmi.ptrAttachment = nullptr;
     wmi.attachmentSize = 0;
     spReaderWriter->SyncWriteMetadata(wmi);
-}
-
-static std::shared_ptr<IXmlNodeRw> GetOrCreateChannelsNode(IXmlNodeRw* root) {
-    auto display = root->GetOrCreateChildNode("Metadata/DisplaySetting");
-    return display->GetOrCreateChildNode("Channels");
-}
-
-static std::shared_ptr<IXmlNodeRw> GetOrCreateChannelById(
-    std::shared_ptr<IXmlNodeRw> channels,
-    const std::wstring& channelId,
-    const std::wstring& channelName) {
-    
-    int targetIdx = -1;
-    int idx = 0;
-    channels->EnumChildren(
-        [&](std::shared_ptr<IXmlNodeRead> child) -> bool {
-            if (child && child->Name() == L"Channel") {
-                std::wstring idAttr;
-                if (child->TryGetAttribute(L"Id", &idAttr) && idAttr == channelId) {
-                    targetIdx = idx;
-                    return false;
-                }
-                ++idx;
-            }
-            return true;
-        });
-
-    if (targetIdx >= 0) {
-        std::string path = "Channel[" + std::to_string(targetIdx) + "]";
-        return channels->GetChildNode(path.c_str());
-    }
-
-    auto ch = channels->AppendChildNode("Channel");
-    ch->SetAttribute(L"Id", channelId.c_str());
-    if (!channelName.empty()) {
-        ch->SetAttribute(L"Name", channelName.c_str());
-    }
-    return ch;
 }
 
 /*static*/ void PyCZIMetadataBuilder::ApplyDisplaySettings(
