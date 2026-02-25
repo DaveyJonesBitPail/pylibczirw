@@ -9,7 +9,7 @@ from pylibCZIrw import czi as czi_mod
 
 
 class FakeBuilder:
-"""Fake builder for testing CziMetadataBuilder wrapper."""
+   """Fake builder for testing CziMetadataBuilder wrapper."""
 
 def __init__(self) -> None:
     self._xml = "<ImageDocument/>"
