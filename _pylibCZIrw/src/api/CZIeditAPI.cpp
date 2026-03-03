@@ -8,6 +8,9 @@ CZIeditAPI::CZIeditAPI(const std::wstring &fileName) {
   auto stream = CreateInputOutputStreamForFile(fileName.c_str());
   auto rw = CreateCZIReaderWriter();
   rw->Create(stream);
+  if (!rw) {
+      throw std::logic_error("Failed to create CZI ReaderWriter.");
+  }
   this->spReaderWriter_ = rw;
 }
 
@@ -19,10 +22,6 @@ void CZIeditAPI::Close() {
 }
 
 std::string CZIeditAPI::ReadMetadataXml() const {
-  if (!this->spReaderWriter_) {
-    throw std::logic_error("ReaderWriter is not initialized.");
-  }
-
   if (auto mdSeg = this->spReaderWriter_->ReadMetadataSegment()) {
     auto meta = CreateMetaFromMetadataSegment(mdSeg.get());
     return meta->GetXml();
@@ -32,9 +31,6 @@ std::string CZIeditAPI::ReadMetadataXml() const {
 
 libCZI::GeneralDocumentInfo CZIeditAPI::ReadGeneralDocumentInfo() const {
   GeneralDocumentInfo result;
-  if (!this->spReaderWriter_) {
-    throw std::logic_error("ReaderWriter is not initialized.");
-  }
   if (auto mdSeg = this->spReaderWriter_->ReadMetadataSegment()) {
     auto meta = CreateMetaFromMetadataSegment(mdSeg.get());
     auto docInfo = meta->GetDocumentInfo();
@@ -47,10 +43,6 @@ libCZI::GeneralDocumentInfo CZIeditAPI::ReadGeneralDocumentInfo() const {
 
 libCZI::ScalingInfo CZIeditAPI::ReadScalingInfo() const {
   ScalingInfo result{};
-  if (!this->spReaderWriter_) {
-    throw std::logic_error("ReaderWriter is not initialized.");
-  }
-
   if (auto mdSeg = this->spReaderWriter_->ReadMetadataSegment()) {
     auto meta = CreateMetaFromMetadataSegment(mdSeg.get());
     auto documentInfo = meta->GetDocumentInfo();
@@ -68,22 +60,12 @@ libCZI::ScalingInfo CZIeditAPI::ReadScalingInfo() const {
 libCZI::CustomValueVariant
 CZIeditAPI::ReadCustomKeyValue(const std::string &key) const {
   libCZI::CustomValueVariant result;
-
-  if (!this->spReaderWriter_) {
-    throw std::logic_error("ReaderWriter is not initialized.");
-  }
-
   auto mdSeg = this->spReaderWriter_->ReadMetadataSegment();
   if (!mdSeg) {
     throw std::logic_error("Unable to read the metadata segment.");
   }
 
   auto meta = CreateMetaFromMetadataSegment(mdSeg.get());
-  auto rootRo = meta->GetChildNodeReadonly("ImageDocument");
-  if (!rootRo) {
-    throw std::logic_error("Unable to find the root node.");
-  }
-
   std::string path =
       "ImageDocument/Metadata/Information/CustomAttributes/KeyValue/";
   path += key;
@@ -150,7 +132,7 @@ CZIeditAPI::ReadCustomKeyValue(const std::string &key) const {
 static std::shared_ptr<IXmlNodeRw> GetChannelsNode(IXmlNodeRw *root) {
   auto displayNode = root->GetChildNode("Metadata/DisplaySetting");
   if (!displayNode) {
-    return nullptr;
+    throw std::logic_error("DisplaySetting node is not available.");
   }
   return displayNode->GetChildNode("Channels");
 }
@@ -160,9 +142,6 @@ CZIeditAPI::ReadDisplaySettings() const {
   std::map<int, const ChannelDisplaySettingsStructWithNameAndDescription>
       result;
 
-  if (!this->spReaderWriter_) {
-    throw std::logic_error("ReaderWriter is not initialized.");
-  }
   auto mdSeg = this->spReaderWriter_->ReadMetadataSegment();
   if (!mdSeg) {
     throw std::logic_error("Unable to read the metadata segment.");
@@ -177,56 +156,44 @@ CZIeditAPI::ReadDisplaySettings() const {
   }
 
   int chanIdxEnum = -1;
+  // EnumChildren should be giving us the elements in order so our map index ought to remain consistent.
   channelsNode->EnumChildren([&](std::shared_ptr<IXmlNodeRead> child) -> bool {
-    if (child && child->Name() == L"Channel") {
-      ++chanIdxEnum;
-
-      int channelIndex = chanIdxEnum;
-      std::wstring idAttr;
-      if (child->TryGetAttribute(L"Id", &idAttr)) {
-        const std::wstring prefix = L"Channel:";
-        if (idAttr.rfind(prefix, 0) == 0) {
-          try {
-            channelIndex = std::stoi(idAttr.substr(prefix.size()));
-          } catch (...) {
-            channelIndex = chanIdxEnum;
-          }
-        }
-      }
-
-      std::string path = "Channel[" + std::to_string(chanIdxEnum) + "]";
-      auto chRw = channelsNode->GetChildNodeReadonly(path.c_str());
-      if (!chRw) {
-        return true;
-      }
-
-      ChannelDisplaySettingsStructWithNameAndDescription ds;
-      ds.Clear();
-
-      std::wstring nameAttr;
-      if (chRw->TryGetAttribute(L"Name", &nameAttr)) {
-        ds.name = nameAttr;
-      }
-
-      auto descNode = chRw->GetChildNodeReadonly("Description");
-      if (descNode) {
-        std::wstring descVal;
-        if (descNode->TryGetValue(&descVal)) {
-          ds.description = descVal;
-        }
-      }
-
-      auto isSelNode = chRw->GetChildNodeReadonly("IsSelected");
-      if (isSelNode) {
-        std::wstring selVal;
-        if (isSelNode->TryGetValue(&selVal)) {
-          ds.isEnabled =
-              (selVal == L"true" || selVal == L"True" || selVal == L"1");
-        }
-      }
-
-      result.emplace(channelIndex, ds);
+    // We should be protected from child being null by the XmlNodeWrapper, but I'm adding it as a guard regardless.
+    if (!child) {
+      throw std::logic_error("Unable to enumerate channels.");
     }
+    ++chanIdxEnum;
+
+    ChannelDisplaySettingsStructWithNameAndDescription channelDisplaySettingsStruct;
+    channelDisplaySettingsStruct.Clear();
+
+    // For now I'm sticking with specified attributes only. We can consider modifying things like TintingMode, white/black points, etc separately.
+    std::wstring nameAttr;
+    if (child->TryGetAttribute(L"Name", &nameAttr)) {
+      channelDisplaySettingsStruct.name = nameAttr;
+    }
+
+    auto descNode = child->GetChildNodeReadonly("Description");
+    if (descNode) {
+      std::wstring descVal;
+      if (descNode->TryGetValue(&descVal)) {
+        channelDisplaySettingsStruct.description = descVal;
+      }
+    }
+
+    auto isSelNode = child->GetChildNodeReadonly("IsSelected");
+    if (isSelNode) {
+      std::wstring selVal;
+      if (isSelNode->TryGetValue(&selVal)) {
+        channelDisplaySettingsStruct.isEnabled =
+            (selVal == L"true" || selVal == L"True" || selVal == L"1");
+      }
+    }
+
+    auto tintingModeNode = child->GetChildNodeReadonly("TintingMode");
+
+    result.emplace(chanIdxEnum, channelDisplaySettingsStruct);
+
     return true;
   });
 
@@ -255,9 +222,6 @@ PyCZIMetadataBuilder::PyCZIMetadataBuilder(
     std::shared_ptr<ICziMetadataBuilder> builder,
     std::shared_ptr<ICziReaderWriter> readerWriter)
     : spBuilder_(std::move(builder)), wpReaderWriter_(readerWriter) {
-  if (!spBuilder_) {
-    throw std::invalid_argument("builder cannot be null");
-  }
 }
 
 std::string PyCZIMetadataBuilder::GetXml(bool prettify) const {
@@ -349,50 +313,23 @@ void PyCZIMetadataBuilder::Commit() {
 
   auto displayNode = root->GetChildNode("Metadata/DisplaySetting");
   if (!displayNode) {
-    return;
+    throw std::logic_error("DisplaySetting node is not available.");
   }
   auto channelsNode = displayNode->GetChildNode("Channels");
   if (!channelsNode) {
-    return;
+    throw std::logic_error("Channels node is not available.");
   }
-
-  auto findChannelById =
-      [&channelsNode](
-          const std::wstring &channelId) -> std::shared_ptr<IXmlNodeRw> {
-    int idx = 0;
-    int targetIdx = -1;
-
-    channelsNode->EnumChildren(
-        [&](std::shared_ptr<IXmlNodeRead> child) -> bool {
-          if (child && child->Name() == L"Channel") {
-            std::wstring idAttr;
-            if (child->TryGetAttribute(L"Id", &idAttr) && idAttr == channelId) {
-              targetIdx = idx;
-              return false;
-            }
-            ++idx;
-          }
-          return true;
-        });
-
-    if (targetIdx < 0) {
-      return nullptr;
-    }
-
-    std::string path = "Channel[" + std::to_string(targetIdx) + "]";
-    return channelsNode->GetChildNode(path.c_str());
-  };
 
   for (const auto &entry : displaySettings) {
     const int chIndex = entry.first;
     const auto &ds = entry.second;
 
-    // Only touch channels that already exist
-    std::wstring channelId =
-        std::wstring(L"Channel:") + std::to_wstring(chIndex);
-    auto chRw = findChannelById(channelId);
+    // This is a positional index query!
+    std::string path = "Channel[" + std::to_string(chIndex) + "]";
+    auto chRw = channelsNode->GetChildNode(path.c_str());
     if (!chRw) {
-      continue;
+      throw std::logic_error("Channel node for index " + std::to_string(chIndex) +
+                             " is not available.");
     }
 
     if (!ds.name.empty()) {
