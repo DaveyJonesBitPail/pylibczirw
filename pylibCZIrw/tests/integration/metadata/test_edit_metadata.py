@@ -229,8 +229,8 @@ def test_set_xml_invalid_content_raises(czi_working_copy: str) -> None:
             builder.set_xml(bad_xml)
 
 
-def test_set_display_settings_nonexistent_channel_noop(czi_working_copy: str) -> None:
-    """Setting display settings for a nonexistent channel has no effect."""
+def test_set_display_settings_nonexistent_channel_raises(czi_working_copy: str) -> None:
+    """Setting display settings for a nonexistent channel raises an error."""
     with edit_czi(czi_working_copy) as editor:
         builder = editor.create_metadata_builder()
 
@@ -243,21 +243,8 @@ def test_set_display_settings_nonexistent_channel_noop(czi_working_copy: str) ->
             description="SHOULD NOT BE ADDED",
         )
 
+    with pytest.raises(Exception):
         builder.set_display_settings({9999: ds})
-        builder.commit()
-
-        xml_after = editor.read_metadata_xml()
-        parsed = xmltodict.parse(xml_after)
-        channels = (
-            parsed.get("ImageDocument", {})
-            .get("Metadata", {})
-            .get("DisplaySetting", {})
-            .get("Channels", {})
-            .get("Channel", [])
-        )
-        if isinstance(channels, dict):
-            channels = [channels]
-        assert all(ch.get("@Id") != "Channel:9999" for ch in channels)
 
 
 def test_set_custom_key_value_add_and_overwrite(czi_working_copy: str) -> None:
