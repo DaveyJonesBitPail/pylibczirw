@@ -219,6 +219,8 @@ class CziReader:
             native_enum = getattr(_pylibCZIrw, "CacheType", None)
             if native_enum is not None:
                 native_cache_type = getattr(native_enum, cache_options.type.name, None)
+            if native_cache_type is None:
+                native_cache_type = cls.CACHE_TYPE_LUT.get(cache_options.type)
             if native_cache_type is not None:
                 sub_block_cache_options.cacheType = native_cache_type
             if cache_options.max_memory_usage is not None:
@@ -1715,7 +1717,7 @@ class CziEditor:
 
         return {idx: to_dto(p) for idx, p in native_map.items()}
 
-    def create_metadata_builder(self) -> "CziMetadataBuilder":
+    def create_metadata_builder(self) -> CziMetadataBuilder:
         """Create a builder initialized with the file's current metadata.
 
         Notes
