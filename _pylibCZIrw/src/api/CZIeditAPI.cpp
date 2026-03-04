@@ -9,7 +9,7 @@ CZIeditAPI::CZIeditAPI(const std::wstring &fileName) {
   auto rw = CreateCZIReaderWriter();
   rw->Create(stream);
   if (!rw) {
-      throw std::logic_error("Failed to create CZI ReaderWriter.");
+    throw std::logic_error("Failed to create CZI ReaderWriter.");
   }
   this->spReaderWriter_ = rw;
 }
@@ -156,18 +156,22 @@ CZIeditAPI::ReadDisplaySettings() const {
   }
 
   int chanIdxEnum = -1;
-  // EnumChildren should be giving us the elements in order so our map index ought to remain consistent.
+  // EnumChildren should be giving us the elements in order so our map index
+  // ought to remain consistent.
   channelsNode->EnumChildren([&](std::shared_ptr<IXmlNodeRead> child) -> bool {
-    // We should be protected from child being null by the XmlNodeWrapper, but I'm adding it as a guard regardless.
+    // We should be protected from child being null by the XmlNodeWrapper, but
+    // I'm adding it as a guard regardless.
     if (!child) {
       throw std::logic_error("Unable to enumerate channels.");
     }
     ++chanIdxEnum;
 
-    ChannelDisplaySettingsStructWithNameAndDescription channelDisplaySettingsStruct;
+    ChannelDisplaySettingsStructWithNameAndDescription
+        channelDisplaySettingsStruct;
     channelDisplaySettingsStruct.Clear();
 
-    // For now I'm sticking with specified attributes only. We can consider modifying things like TintingMode, white/black points, etc separately.
+    // For now I'm sticking with specified attributes only. We can consider
+    // modifying things like TintingMode, white/black points, etc separately.
     std::wstring nameAttr;
     if (child->TryGetAttribute(L"Name", &nameAttr)) {
       channelDisplaySettingsStruct.name = nameAttr;
@@ -221,8 +225,7 @@ std::shared_ptr<PyCZIMetadataBuilder> CZIeditAPI::CreateMetadataBuilder() {
 PyCZIMetadataBuilder::PyCZIMetadataBuilder(
     std::shared_ptr<ICziMetadataBuilder> builder,
     std::shared_ptr<ICziReaderWriter> readerWriter)
-    : spBuilder_(std::move(builder)), wpReaderWriter_(readerWriter) {
-}
+    : spBuilder_(std::move(builder)), wpReaderWriter_(readerWriter) {}
 
 std::string PyCZIMetadataBuilder::GetXml(bool prettify) const {
   if (!this->spBuilder_) {
@@ -328,8 +331,8 @@ void PyCZIMetadataBuilder::Commit() {
     std::string path = "Channel[" + std::to_string(chIndex) + "]";
     auto chRw = channelsNode->GetChildNode(path.c_str());
     if (!chRw) {
-      throw std::logic_error("Channel node for index " + std::to_string(chIndex) +
-                             " is not available.");
+      throw std::logic_error("Channel node for index " +
+                             std::to_string(chIndex) + " is not available.");
     }
 
     if (!ds.name.empty()) {

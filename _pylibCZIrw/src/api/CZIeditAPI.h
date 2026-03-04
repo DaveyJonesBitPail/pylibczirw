@@ -148,19 +148,19 @@ public:
   /// Read current display settings for all channels from the file.
   /// \returns A map of index corresponding to order in XML to
   /// ChannelDisplaySettingsStructWithNameAndDescription.
-  /// \remarks The reason for using a map here is so that users can easily modify/apply
-  /// DisplaySettings sparsely if the need would arise. There are no guarantees that the
-  /// ID mapping will be consistent and can be used for things like Dimension editing in the future.
+  /// \remarks The reason for using a map here is so that users can easily
+  /// modify/apply DisplaySettings sparsely if the need would arise. There are
+  /// no guarantees that the ID mapping will be consistent and can be used for
+  /// things like Dimension editing in the future.
   std::map<int, const ChannelDisplaySettingsStructWithNameAndDescription>
   ReadDisplaySettings() const;
 
   /// Read a custom key-value pair from the metadata.
   /// \param key The key name to look up.
   /// \returns The value associated with the key, or a default variant if not
-  /// \remark A default constructed CustomValueVariant has type Invalid, it therefore allows
-  /// one to distinguish whether the key is present or not. If the key was found the type will
-  /// never be invalid.
-  /// found.
+  /// \remark A default constructed CustomValueVariant has type Invalid, it
+  /// therefore allows one to distinguish whether the key is present or not. If
+  /// the key was found the type will never be invalid. found.
   libCZI::CustomValueVariant ReadCustomKeyValue(const std::string &key) const;
 
   /// Create a metadata builder initialized from the file's current metadata.
