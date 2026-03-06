@@ -145,13 +145,6 @@ jobs:
             CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLMACOS}}",
             CIBW_ENVIRONMENT: "MACOSX_DEPLOYMENT_TARGET=11.0 CMAKE_OSX_ARCHITECTURES=arm64",
           }
-          - {
-            # macos-15 is arm64
-            PoolImage: macos-15,
-            OS: macOS-arm64-15,
-            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLMACOS}}",
-            CIBW_ENVIRONMENT: "MACOSX_DEPLOYMENT_TARGET=11.0 CMAKE_OSX_ARCHITECTURES=arm64",
-          }
     steps:
       - uses: actions/checkout@v5
         with:
