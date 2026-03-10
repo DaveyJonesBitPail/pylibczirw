@@ -54,8 +54,10 @@ CZIreadAPI::CZIreadAPI(const std::string &stream_class_name,
   const auto reader = libCZI::CreateCZIReader();
   ICZIReader::OpenOptions openOptions;
   openOptions.SetDefault();
-  openOptions.lax_subblock_coordinate_checks = readerOptions.laxSubblockCoordinateChecks;
-  openOptions.ignore_sizem_for_pyramid_subblocks = readerOptions.ignoreSizeMForPyramidSubblocks;
+  openOptions.lax_subblock_coordinate_checks =
+      readerOptions.laxSubblockCoordinateChecks;
+  openOptions.ignore_sizem_for_pyramid_subblocks =
+      readerOptions.ignoreSizeMForPyramidSubblocks;
   reader->Open(stream, &openOptions);
   this->spAccessor = reader->CreateSingleChannelScalingTileAccessor();
   this->spReader = reader;

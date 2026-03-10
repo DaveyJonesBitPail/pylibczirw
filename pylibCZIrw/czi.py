@@ -263,12 +263,8 @@ class CziReader:
             libczi_reader_options.enableVisibilityCheckOptimization = (
                 reader_options.enable_visibility_check_optimization
             )
-            libczi_reader_options.laxSubblockCoordinateChecks = (
-                reader_options.lax_subblock_coordinate_checks
-            )
-            libczi_reader_options.ignoreSizeMForPyramidSubblocks = (
-                reader_options.ignore_sizem_for_pyramid_subblocks
-            )
+            libczi_reader_options.laxSubblockCoordinateChecks = reader_options.lax_subblock_coordinate_checks
+            libczi_reader_options.ignoreSizeMForPyramidSubblocks = reader_options.ignore_sizem_for_pyramid_subblocks
         return libczi_reader_options
 
     @staticmethod
