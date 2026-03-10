@@ -11,11 +11,12 @@ struct ReaderOptions {
   /// whether to enable visibility check optimization
   bool enableVisibilityCheckOptimization = true;
 
-  /// whether to use lax parameter validation when parsing subblock dimension entries
+  /// whether to use lax parameter validation when parsing subblock dimension
+  /// entries
   bool laxSubblockCoordinateChecks = true;
 
-  /// whether to ignore the size-M attribute of pyramid subblocks (only relevant when
-  /// laxSubblockCoordinateChecks is false)
+  /// whether to ignore the size-M attribute of pyramid subblocks (only relevant
+  /// when laxSubblockCoordinateChecks is false)
   bool ignoreSizeMForPyramidSubblocks = false;
 
   void Clear() {
