@@ -235,6 +235,10 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
       .def_readwrite("enableMaskAwareness", &ReaderOptions::enableMaskAwareness)
       .def_readwrite("enableVisibilityCheckOptimization",
                      &ReaderOptions::enableVisibilityCheckOptimization)
+      .def_readwrite("laxSubblockCoordinateChecks",
+                     &ReaderOptions::laxSubblockCoordinateChecks)
+      .def_readwrite("ignoreSizeMForPyramidSubblocks",
+                     &ReaderOptions::ignoreSizeMForPyramidSubblocks)
       .def("Clear", &ReaderOptions::Clear);
 
   // PyCZIMetadataBuilder bindings (Python-facing wrapper)
