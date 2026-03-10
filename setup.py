@@ -219,8 +219,9 @@ class CMakeBuild(build_ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
-            "-DPYTHON_EXECUTABLE=" + sys.executable,  # used for older pybind11
-            "-DPython_EXECUTABLE=" + sys.executable,  # used for pybind11 3.x (FindPython).
+            # Ensure pybind11 finds and links the current build interpreter (not a different one on PATH)
+            "-DPYBIND11_FINDPYTHON=NEW",
+            "-DPython_EXECUTABLE=" + sys.executable,
         ]
 
         cfg = "Debug" if self.debug else "Release"
@@ -309,7 +310,7 @@ setup(
     cmdclass={"build_ext": CMakeBuild},
     install_requires=requirements,
     # we require at least python version 3.9
-    python_requires=">=3.9,<3.14",
+    python_requires=">=3.9,<3.15",
     license_files=["COPYING", "COPYING.LESSER", "NOTICE.txt"],
     # Classifiers help users find your project by categorizing it.
     # For a list of valid classifiers, see https://pypi.org/classifiers/

@@ -10,7 +10,17 @@ from dataclasses import dataclass
 from enum import Enum
 from os import makedirs
 from os.path import abspath, dirname, isfile
-from typing import Any, Callable, Dict, Generator, NamedTuple, Optional, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Iterator,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import validators
@@ -205,7 +215,14 @@ class CziReader:
         sub_block_cache_options = _pylibCZIrw.SubBlockCacheOptions()
         sub_block_cache_options.Clear()
         if cache_options:
-            sub_block_cache_options.cacheType = cls.CACHE_TYPE_LUT[cache_options.type]
+            native_cache_type = None
+            native_enum = getattr(_pylibCZIrw, "CacheType", None)
+            if native_enum is not None:
+                native_cache_type = getattr(native_enum, cache_options.type.name, None)
+            if native_cache_type is None:
+                native_cache_type = cls.CACHE_TYPE_LUT.get(cache_options.type)
+            if native_cache_type is not None:
+                sub_block_cache_options.cacheType = native_cache_type
             if cache_options.max_memory_usage is not None:
                 sub_block_cache_options.pruneOptions.maxMemoryUsage = cache_options.max_memory_usage
             if cache_options.max_sub_block_count is not None:
@@ -1281,6 +1298,7 @@ class CziWriter:
             Display settings that are not written will be set as 'empty', regardless of if they
             initially existed for that channel.
         """
+
         channel_names = channel_names or {}
         display_settings_dict = {}
         if display_settings:
@@ -1306,6 +1324,446 @@ class CziWriter:
             display_settings_dict,
         )
         self._metadata_writen = True
+
+
+@dataclass
+class ScalingInfoDto:
+    """ScalingInfoDto.
+
+    Represents pixel size (scaling) in the existing unit (by default micrometers) for X, Y, Z axes.
+    - A field left as None indicates “unspecified/no change”.
+    - When editing, only provided values are applied.
+
+    Attributes
+    ----------
+    scale_x : Optional[float]
+        Pixel size along X.
+    scale_y : Optional[float]
+        Pixel size along Y.
+    scale_z : Optional[float]
+        Pixel size along Z.
+    """
+
+    scale_x: Optional[float] = None
+    scale_y: Optional[float] = None
+    scale_z: Optional[float] = None
+
+
+@dataclass
+class ChannelDisplaySettingsDataClassWithNameAndDescription(ChannelDisplaySettingsDataClass):
+    """ChannelDisplaySettingsDataClassWithNameAndDescription.
+
+    Extends channel display settings with optional `name` and `description`.
+
+    Notes
+    -----
+    - `is_enabled`, contrast points (`black_point`, `white_point`) and `tinting_*`
+      behave as in `ChannelDisplaySettingsDataClass`.
+    - `name` and `description` are optional; omit or set None to leave unchanged on edit.
+    """
+
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
+@dataclass
+class GeneralDocumentInfoDto:
+    """DTO for general document information fields."""
+
+    name: Optional[str] = None
+    title: Optional[str] = None
+    user_name: Optional[str] = None
+    description: Optional[str] = None
+    comment: Optional[str] = None
+    keywords: Optional[str] = None
+    rating: Optional[float] = None
+    creation_date_time: Optional[str] = None
+
+
+class CziMetadataBuilder:
+    """CziMetadataBuilder.
+
+    High-level helper to edit metadata. Create via `CziEditor.begin_edit()` or `CziEditor.create_metadata_builder()`.
+
+    General behavior
+    ----------------
+    - Setters accept DTOs and/or keyword arguments.
+    - Fields not provided (None) are ignored; only specified fields are applied.
+    - Call `commit()` to persist changes. Use `can_commit()` to verify the builder is valid.
+    """
+
+    def __init__(self, native: "_pylibCZIrw.CziMetadataBuilder") -> None:
+        self._native = native
+
+    # Helper method to filter function inputs
+    @staticmethod
+    def _filter_none(d: Dict[str, Any]) -> Dict[str, Any]:
+        return {k: v for k, v in d.items() if v is not None}
+
+    def get_xml(self, prettify: bool = False) -> str:
+        """Get the current metadata XML.
+
+        Parameters
+        ----------
+        prettify : bool, optional
+            If True, return pretty-printed XML where supported by the native implementation.
+        """
+        return self._native.get_xml(prettify)
+
+    def set_xml(self, xml_string: str) -> None:
+        """Replace the entire metadata XML content.
+
+        Parameters
+        ----------
+        xml_string : str
+            The new XML content to set.
+        """
+        self._native.set_xml(xml_string)
+
+    def set_general_document_info(
+        self,
+        info: Optional[GeneralDocumentInfoDto] = None,
+        *,
+        name: Optional[str] = None,
+        title: Optional[str] = None,
+        user_name: Optional[str] = None,
+        description: Optional[str] = None,
+        comment: Optional[str] = None,
+        keywords: Optional[str] = None,
+        rating: Optional[float] = None,
+    ) -> None:
+        """Update general document fields.
+
+        Parameters
+        ----------
+        info : Optional[GeneralDocumentInfoDto]
+            DTO whose non-None fields are applied.
+        name : Optional[str]
+            Document name. Overrides DTO when provided.
+        title : Optional[str]
+            Document title. Overrides DTO when provided.
+        user_name : Optional[str]
+            User name. Overrides DTO when provided.
+        description : Optional[str]
+            Document description. Overrides DTO when provided.
+        comment : Optional[str]
+            Document comment. Overrides DTO when provided.
+        keywords : Optional[str]
+            Document keywords. Overrides DTO when provided.
+        rating : Optional[float]
+            Document rating. Overrides DTO when provided.
+
+        Examples
+        --------
+        - Update only the name:
+            builder.set_general_document_info(name="New name")
+        - Merge a DTO and override one field:
+            builder.set_general_document_info(info=dto, comment="Updated")
+
+        Notes
+        -----
+        Unspecified fields remain unchanged in the document.
+        """
+        base = {
+            "name": getattr(info, "name", None),
+            "title": getattr(info, "title", None),
+            "user_name": getattr(info, "user_name", None),
+            "description": getattr(info, "description", None),
+            "comment": getattr(info, "comment", None),
+            "keywords": getattr(info, "keywords", None),
+            "rating": getattr(info, "rating", None),
+        }
+        base.update(
+            self._filter_none(
+                {
+                    "name": name,
+                    "title": title,
+                    "user_name": user_name,
+                    "description": description,
+                    "comment": comment,
+                    "keywords": keywords,
+                    "rating": rating,
+                }
+            )
+        )
+        args = self._filter_none(base)
+        self._native.set_general_document_info(**args)
+
+    def set_scaling_info(
+        self,
+        scaling: Optional[ScalingInfoDto] = None,
+        *,
+        scale_x: Optional[float] = None,
+        scale_y: Optional[float] = None,
+        scale_z: Optional[float] = None,
+    ) -> None:
+        """Update scaling (pixel size in the existing unit, typically µm).
+
+        Parameters
+        ----------
+        scaling : Optional[ScalingInfoDto]
+            DTO whose non-None fields are applied.
+        scale_x : Optional[float]
+            X-axis scale. Overrides DTO when provided.
+        scale_y : Optional[float]
+            Y-axis scale. Overrides DTO when provided.
+        scale_z : Optional[float]
+            Z-axis scale. Overrides DTO when provided.
+
+        Examples
+        --------
+        - Update only scale_x:
+            builder.set_scaling_info(scale_x=0.25)
+        - Apply a DTO:
+            builder.set_scaling_info(ScalingInfoDto(scale_x=0.25, scale_y=0.25))
+
+        Notes
+        -----
+        Unspecified axes remain unchanged.
+        """
+        base = {
+            "scale_x": getattr(scaling, "scale_x", None),
+            "scale_y": getattr(scaling, "scale_y", None),
+            "scale_z": getattr(scaling, "scale_z", None),
+        }
+        base.update(self._filter_none({"scale_x": scale_x, "scale_y": scale_y, "scale_z": scale_z}))
+        args = self._filter_none(base)
+        self._native.set_scaling_info(**args)
+
+    def set_custom_key_value(self, key: str, value: Union[int, float, bool, str]) -> None:
+        """Forward a Python-native value by constructing a CustomValueVariant."""
+        cv = _pylibCZIrw.CustomValueVariant()
+        if isinstance(value, bool):
+            cv.boolValue = value
+        elif isinstance(value, int):
+            cv.int32Value = value
+        elif isinstance(value, float):
+            cv.doubleValue = value
+        elif isinstance(value, str):
+            cv.stringValue = value
+        else:
+            raise ValueError("Custom attribute value must be bool, int, float, or str.")
+        self._native.set_custom_key_value(key, cv)
+
+    def set_display_settings(
+        self,
+        display_settings: Dict[
+            int,
+            Union[ChannelDisplaySettingsDataClass, ChannelDisplaySettingsDataClassWithNameAndDescription],
+        ],
+    ) -> None:
+        """Update per-channel display settings.
+
+        Parameters
+        ----------
+        display_settings : Dict[int, ChannelDisplaySettingsDataClass or \
+            ChannelDisplaySettingsDataClassWithNameAndDescription]
+            Mapping from channel index to settings DTO.
+
+        Notes
+        -----
+        - Only provided channels are updated.
+        - Optional `name` and `description` are applied when present.
+        - `is_enabled` updates selection for channels.
+        """
+        # pylint: disable=import-outside-toplevel,no-name-in-module
+        from _pylibCZIrw import (
+            ChannelDisplaySettingsStructWithNameAndDescription,
+            TintingModeEnum,
+        )
+
+        def to_pod(
+            ds_py: Union[ChannelDisplaySettingsDataClass, ChannelDisplaySettingsDataClassWithNameAndDescription]
+        ) -> ChannelDisplaySettingsStructWithNameAndDescription:
+            pod = ChannelDisplaySettingsStructWithNameAndDescription()
+            pod.Clear()
+            pod.isEnabled = ds_py.is_enabled
+            pod.blackPoint = ds_py.black_point
+            pod.whitePoint = ds_py.white_point
+            pod.tintingColor.r = ds_py.tinting_color.r
+            pod.tintingColor.g = ds_py.tinting_color.g
+            pod.tintingColor.b = ds_py.tinting_color.b
+            pod.tintingMode = (
+                TintingModeEnum.Color if ds_py.tinting_mode == TintingMode.Color else getattr(TintingModeEnum, "None")
+            )
+            pod.description = getattr(ds_py, "description", None) or ""
+            pod.name = getattr(ds_py, "name", None) or ""
+            return pod
+
+        mapped = {idx: to_pod(ds) for idx, ds in display_settings.items()}
+        self._native.set_display_settings(mapped)
+
+    def can_commit(self) -> bool:
+        """Return True if the builder can commit changes."""
+        return self._native.can_commit()
+
+    def commit(self) -> None:
+        """Commit all pending changes to the CZI file."""
+        self._native.commit()
+
+
+class CziEditor:
+    """CziEditor.
+
+    Opens an existing CZI for metadata edits. Reading is done via the editor; writing via a builder.
+
+    Usage
+    -----
+    with edit_czi(path) as editor:
+        info = editor.read_general_document_info()
+        scaling = editor.read_scaling_info()
+        with editor.edit_session() as builder:
+            builder.set_general_document_info(name="New name")
+            builder.set_scaling_info(scale_x=0.25)
+            # builder.commit() is called automatically on successful exit
+    """
+
+    def __init__(self, filepath: str) -> None:
+        """Open an existing CZI file for in-place metadata editing."""
+        self._editor = _pylibCZIrw.czi_editor(filepath)
+
+    def close(self) -> None:
+        """Close the editor and underlying file handle."""
+        self._editor.close()
+
+    @property
+    def is_open(self) -> bool:
+        """Return True if the editor is open."""
+        return self._editor.is_open()
+
+    def read_metadata_xml(self) -> str:
+        """Return the current metadata XML."""
+        return self._editor.read_metadata_xml()
+
+    def read_custom_key_value(self, key: str) -> Optional[Union[int, float, bool, str]]:
+        """Return the custom attribute value for the given key.
+
+        Returns the value as a native Python type (bool, int, float, str), or None if the variant is empty/unsupported.
+        """
+        variant = self._editor.read_custom_key_value(key)
+
+        for accessor in (
+            lambda v: v.boolValue,
+            lambda v: v.int32Value,
+            lambda v: v.doubleValue,
+            lambda v: v.floatValue,
+            lambda v: v.stringValue,
+        ):
+            try:
+                return accessor(variant)
+            except RuntimeError:
+                continue
+        return None
+
+    def read_general_document_info(self) -> Dict[str, Any]:
+        """Return available general document information as a dict.
+
+        Notes
+        -----
+        Keys may include: 'name', 'title', 'user_name', 'description',
+        'comment', 'keywords', 'rating', 'creation_date_time'.
+        Missing keys indicate the information is not present in the file.
+        """
+        return self._editor.read_general_document_info()
+
+    def read_scaling_info(self) -> ScalingInfoDto:
+        """Return current scaling (pixel size in default unit which is typically µm) as a DTO.
+
+        Notes
+        -----
+        - Unavailable axes are returned as None.
+        - Use `builder.set_scaling_info(...)` to update specific axes without affecting others.
+        """
+        native = self._editor.read_scaling_info()
+        return ScalingInfoDto(
+            scale_x=native.get("scale_x"),
+            scale_y=native.get("scale_y"),
+            scale_z=native.get("scale_z"),
+        )
+
+    def read_display_settings(self) -> Dict[int, ChannelDisplaySettingsDataClassWithNameAndDescription]:
+        """Return per-channel display settings as DTOs.
+
+        Returns
+        -------
+        Dict[int, ChannelDisplaySettingsDataClassWithNameAndDescription]
+            Mapping from channel index to settings DTO.
+
+        Notes
+        -----
+        The mapping may be empty if the file does not contain display settings.
+        """
+        native_map = self._editor.read_display_settings()
+
+        def to_dto(
+            pod: "_pylibCZIrw.ChannelDisplaySettingsStructWithNameAndDescription",
+        ) -> ChannelDisplaySettingsDataClassWithNameAndDescription:
+            # map native tinting-mode enum to Python TintingMode
+            tinting_enum_color = _pylibCZIrw.TintingModeEnum.Color
+            tint_mode_py = TintingMode.Color if pod.tintingMode == tinting_enum_color else TintingMode.none
+            return ChannelDisplaySettingsDataClassWithNameAndDescription(
+                is_enabled=bool(getattr(pod, "isEnabled", False)),
+                tinting_mode=tint_mode_py,
+                tinting_color=Rgb8Color(
+                    r=np.uint8(getattr(pod.tintingColor, "r", 0)),
+                    g=np.uint8(getattr(pod.tintingColor, "g", 0)),
+                    b=np.uint8(getattr(pod.tintingColor, "b", 0)),
+                ),
+                black_point=float(getattr(pod, "blackPoint", 0.0)),
+                white_point=float(getattr(pod, "whitePoint", 1.0)),
+                name=getattr(pod, "name", None) if hasattr(pod, "name") else None,
+                description=getattr(pod, "description", None) if hasattr(pod, "description") else None,
+            )
+
+        return {idx: to_dto(p) for idx, p in native_map.items()}
+
+    def create_metadata_builder(self) -> CziMetadataBuilder:
+        """Create a builder initialized with the file's current metadata.
+
+        Notes
+        -----
+        - Use builder setters to change specific fields.
+        - Call `commit()` to persist changes. For convenience, `edit_session()` auto-commits on success.
+        """
+        native_builder = self._editor.create_metadata_builder()
+        return CziMetadataBuilder(native_builder)
+
+    @staticmethod
+    def make_channel_display_setting_with_description(
+        is_enabled: bool,
+        tinting_mode: TintingMode,
+        tinting_color: Rgb8Color,
+        black_point: float,
+        white_point: float,
+        description: str,
+    ) -> "_pylibCZIrw.ChannelDisplaySettingsStructWithDescription":
+        """Helper to build ChannelDisplaySettingsStructWithDescription from Python datatypes."""
+        pod = _pylibCZIrw.ChannelDisplaySettingsStructWithDescription()
+        pod.Clear()
+        pod.isEnabled = is_enabled
+        pod.blackPoint = black_point
+        pod.whitePoint = white_point
+        pod.tintingColor.r = tinting_color.r
+        pod.tintingColor.g = tinting_color.g
+        pod.tintingColor.b = tinting_color.b
+        if tinting_mode == TintingMode.Color:
+            pod.tintingMode = _pylibCZIrw.TintingModeEnum.Color
+        else:
+            pod.tintingMode = getattr(_pylibCZIrw.TintingModeEnum, "None")
+        pod.description = description
+        return pod
+
+    def begin_edit(self) -> "CziMetadataBuilder":
+        """Start an edit session by creating a metadata builder."""
+        return self.create_metadata_builder()
+
+    @contextlib.contextmanager
+    def edit_session(self) -> Iterator["CziMetadataBuilder"]:
+        """Context-managed edit session."""
+        builder = self.begin_edit()
+        yield builder
+        if builder.can_commit():
+            builder.commit()
 
 
 @contextlib.contextmanager
@@ -1388,3 +1846,24 @@ def create_czi(
         yield writer
     finally:
         writer.close()
+
+
+@contextlib.contextmanager
+def edit_czi(filepath: str) -> Generator[CziEditor, None, None]:
+    """Initialize a czi editor object and returns it.
+
+    Parameters
+    ----------
+    filepath : str
+        File path to an existing CZI.
+
+    Returns
+    ----------
+     : czi_editor
+        CziEditor for in-place metadata editing.
+    """
+    editor = CziEditor(filepath)
+    try:
+        yield editor
+    finally:
+        editor.close()
