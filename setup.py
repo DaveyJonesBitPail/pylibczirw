@@ -221,7 +221,8 @@ class CMakeBuild(build_ext):
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
             # Ensure pybind11 finds and links the current build interpreter (not a different one on PATH)
             "-DPYBIND11_FINDPYTHON=NEW",
-            "-DPython_EXECUTABLE=" + sys.executable,
+            "-DPYTHON_EXECUTABLE=" + sys.executable,  # used for older pybind11
+            "-DPython_EXECUTABLE=" + sys.executable,  # used for pybind11 3.x (FindPython).
         ]
 
         cfg = "Debug" if self.debug else "Release"

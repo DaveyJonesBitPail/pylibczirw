@@ -92,6 +92,15 @@ class ReaderOptions:
     enable_visibility_check_optimization: bool = True
     """Whether the accessor will use the visibility-check-optimization for the tile-composition."""
 
+    lax_subblock_coordinate_checks: bool = True
+    """Whether to use lax parameter validation when parsing subblock dimension entries.
+    The default (True) is lenient for compatibility with older files. Set to False for strict validation."""
+
+    ignore_sizem_for_pyramid_subblocks: bool = False
+    """Whether to ignore the size-M attribute of pyramid subblocks.
+    Only relevant when lax_subblock_coordinate_checks is False.
+    Useful for CZI files with bogus SizeM values."""
+
 
 @dataclass
 class Rgb8Color:
@@ -254,6 +263,8 @@ class CziReader:
             libczi_reader_options.enableVisibilityCheckOptimization = (
                 reader_options.enable_visibility_check_optimization
             )
+            libczi_reader_options.laxSubblockCoordinateChecks = reader_options.lax_subblock_coordinate_checks
+            libczi_reader_options.ignoreSizeMForPyramidSubblocks = reader_options.ignore_sizem_for_pyramid_subblocks
         return libczi_reader_options
 
     @staticmethod

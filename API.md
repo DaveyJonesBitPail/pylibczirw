@@ -1,40 +1,59 @@
-# API Specification
+﻿# API Specification
 **Table of Contents**
-- [Opening a CZI (read-only)](#opening-a-czi-read-only)
-- [Reading a CZI](#reading-a-czi)
-  - [Reading dimension information](#reading-dimension-information)
-  - [Reading metadata](#reading-metadata)
-  - [Reading custom attributes](#reading-custom-attributes)
-  - [Reading pixel type](#reading-pixel-type)
-  - [Reading pixel data](#reading-pixel-data)
-    - [Signature](#signature)
-     - [`read(**kwargs)`](#readkwargs)
-     - [roi (optional)](#roi)
-     - [plane (optional)](#plane)
-     - [scene (optional)](#scene)
-     - [zoom (optional)](#zoom)
-     - [pixel_type (optional)](#pixel_type)
-     - [background_pixel (optional)](#background_pixel)
-- [Creating a CZI](#creating-a-czi)
-- [Writing a CZI](#writing-a-czi)
-  - [Writing pixel data](#writing-pixel-data)
-    - [Signature](#signature-1)
-    - [`write(data, **kwargs)`](#writedata-kwargs)
-    - [data (required)](#data)
-    - [location (optional)](#location)
-    - [plane (optional)](#plane)
-    - [compression_options (optional)](#compression_options)
-    - [scene_index (optional)](#scene_index)
-  - [Writing metadata](#writing-metadata)
-    - [document_name (optional)](#document_name)
-    - [channel_names (optional)](#channel_names)
-    - [scale_x (optional)](#scale_x)
-    - [scale_y (optional)](#scale_y)
-    - [scale_z (optional)](#scale_z)
-    - [custom_attributes (optional)](#custom_attributes)
-    - [display_settings (optional)](#display_settings)
-  - [Writing Example](#writing-example)
-- [Advanced Topics](#advanced-topics)
+- [API Specification](#api-specification)
+  - [Opening a CZI (read-only)](#opening-a-czi-read-only)
+    - [Using a subblock cache](#using-a-subblock-cache)
+    - [Specifying additional reader-options](#specifying-additional-reader-options)
+  - [Reading a CZI](#reading-a-czi)
+    - [Reading dimension information](#reading-dimension-information)
+    - [Reading raw metadata](#reading-raw-metadata)
+    - [Reading metadata](#reading-metadata)
+    - [Reading custom attributes](#reading-custom-attributes)
+    - [Reading pixel type](#reading-pixel-type)
+    - [Reading pixel data](#reading-pixel-data)
+      - [`read(**kwargs)`](#readkwargs)
+      - [roi](#roi)
+      - [plane](#plane)
+      - [scene](#scene)
+      - [zoom](#zoom)
+      - [pixel\_type](#pixel_type)
+      - [background\_pixel](#background_pixel)
+  - [Creating a CZI](#creating-a-czi)
+  - [Writing a CZI](#writing-a-czi)
+    - [Writing pixel data](#writing-pixel-data)
+      - [`write(data, **kwargs)`](#writedata-kwargs)
+      - [data](#data)
+      - [location](#location)
+      - [plane](#plane-1)
+      - [compression\_options](#compression_options)
+      - [scene](#scene-1)
+    - [Writing metadata](#writing-metadata)
+      - [document\_name](#document_name)
+      - [channel\_names](#channel_names)
+      - [scale\_x](#scale_x)
+      - [scale\_y](#scale_y)
+      - [scale\_z](#scale_z)
+      - [custom\_attributes](#custom_attributes)
+      - [display\_settings](#display_settings)
+      - [Writing Example](#writing-example)
+  - [Advanced Topics](#advanced-topics)
+    - [Pixel Types](#pixel-types)
+      - [Discovery](#discovery)
+      - [Handling and Conversion](#handling-and-conversion)
+        - [Reading](#reading)
+        - [Writing](#writing)
+    - [Masks](#masks)
+    - [Scenes](#scenes)
+      - [Images with no scenes](#images-with-no-scenes)
+      - [Images with non-uniform scenes](#images-with-non-uniform-scenes)
+      - [Images with uniform scenes](#images-with-uniform-scenes)
+    - [Handling Planes of Different Sizes](#handling-planes-of-different-sizes)
+  - [Editing metadata in-place (CziEditor)](#editing-metadata-in-place-czieditor)
+    - [Opening a CZI for editing](#opening-a-czi-for-editing)
+    - [Starting an edit session](#starting-an-edit-session)
+    - [Builder operations](#builder-operations)
+    - [Example: update document info and scaling](#example-update-document-info-and-scaling)
+    - [Example: update display settings for an existing channel](#example-update-display-settings-for-an-existing-channel)
 
 ## Opening a CZI (read-only)
 
@@ -64,9 +83,11 @@ with czi.open_czi(file_path, cache_options=cache_options) as czi:
 
 ### Specifying additional reader-options
 The `open_czi` method accepts a `ReaderOptions` structure where additional configurations
-can be given controlling the operations. There are two options currently available:
+can be given controlling the operations. The following options are available:
 - `enable_mask_awareness` - whether the tile-composition uses mask-information. This is by default `false`.
 - `enable_visibility_check_optimization` - in the tile-composition, do a visibility-check before reading sub-blocks, potentially reducing the amount of data that must be loaded. This is by default `true`.
+- `lax_subblock_coordinate_checks` - whether to use lax parameter validation when parsing subblock dimension entries. The default (`true`) is lenient for compatibility with older files. Set to `false` for strict validation. Users are encouraged to disable this for new code.
+- `ignore_sizem_for_pyramid_subblocks` - whether to ignore the size-M attribute of pyramid subblocks. Only relevant when `lax_subblock_coordinate_checks` is `false`. Useful for CZI files with bogus SizeM values. This is by default `false`.
 
 The `ReaderOptions` can be passed to `open_czi` like in this example:
 
@@ -77,7 +98,9 @@ cache_options = CacheOptions(
   max_sub_block_count = 100,
 )
 reader_options = ReaderOptions(
-  enable_mask_awareness = True
+  enable_mask_awareness = True,
+  lax_subblock_coordinate_checks = False,
+  ignore_sizem_for_pyramid_subblocks = True,
 )
 with czi.open_czi(file_path, cache_options=cache_options, reader_options=reader_options) as czi:
     ...
@@ -731,7 +754,7 @@ The builder provides high-level setters. Fields left as None are ignored; only s
 - `set_general_document_info(...)` -> updates document info fields. Accepts a DTO and/or keyword arguments:
   - `name`, `title`, `user_name`, `description`, `comment`, `keywords`, `rating`
   - Unspecified fields remain unchanged.
-- `set_scaling_info(...)` -> updates pixel size in the existing unit (typically �m). Accepts a DTO and/or keyword args:
+- `set_scaling_info(...)` -> updates pixel size in the existing unit (typically μm). Accepts a DTO and/or keyword args:
   - `scale_x`, `scale_y`, `scale_z`
   - Unspecified axes remain unchanged.
 - `set_custom_key_value(key, value)` -> sets or adds a custom attribute. `value` must be bool, int, float, or str.
