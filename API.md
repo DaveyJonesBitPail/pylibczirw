@@ -1,4 +1,4 @@
-# API Specification
+﻿# API Specification
 **Table of Contents**
 - [Opening a CZI (read-only)](#opening-a-czi-read-only)
 - [Reading a CZI](#reading-a-czi)
@@ -731,7 +731,7 @@ The builder provides high-level setters. Fields left as None are ignored; only s
 - `set_general_document_info(...)` -> updates document info fields. Accepts a DTO and/or keyword arguments:
   - `name`, `title`, `user_name`, `description`, `comment`, `keywords`, `rating`
   - Unspecified fields remain unchanged.
-- `set_scaling_info(...)` -> updates pixel size in the existing unit (typically �m). Accepts a DTO and/or keyword args:
+- `set_scaling_info(...)` -> updates pixel size in the existing unit (typically μm). Accepts a DTO and/or keyword args:
   - `scale_x`, `scale_y`, `scale_z`
   - Unspecified axes remain unchanged.
 - `set_custom_key_value(key, value)` -> sets or adds a custom attribute. `value` must be bool, int, float, or str.
