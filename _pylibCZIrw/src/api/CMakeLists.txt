@@ -14,7 +14,9 @@ add_library(
   StaticContext.cpp
   StaticContext.h
   SubBlockCache.h
-  ReaderOptions.h)
+  ReaderOptions.h
+  CZIeditAPI.h
+  CZIeditAPI.cpp)
 
 target_include_directories(_pylibCZIrw_API PRIVATE ${libCZI_SOURCE_DIR})
 target_link_libraries(_pylibCZIrw_API INTERFACE libCZIStatic JxrDecodeStatic)

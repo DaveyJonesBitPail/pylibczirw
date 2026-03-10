@@ -1,4 +1,4 @@
-# API Specification
+﻿# API Specification
 **Table of Contents**
 - [Opening a CZI (read-only)](#opening-a-czi-read-only)
 - [Reading a CZI](#reading-a-czi)
@@ -689,3 +689,104 @@ The user can nevertheless access the data normally, but the assumption that the 
 The standard way of defining ROIs to cover a plane will lead situations like the one below, where accessing Z=4 starting with a ROI (0,0, w, h) produces a bitmap with invalid data.
 
 ![image info](doc/images/fib_stack_roi.png)
+
+## Editing metadata in-place (CziEditor)
+
+The edit API allows reading metadata and performing in-place metadata changes on an existing CZI without rewriting pixel data. It uses a context manager to open the file and provides a builder for staged edits that are committed once.
+
+### Opening a CZI for editing
+
+Open an existing file and obtain an editor:
+
+```python
+from pylibCZIrw.czi import edit_czi
+with edit_czi(file_path) as editor: assert editor.is_open xml = editor.read_metadata_xml()
+```
+
+- The editor exposes read helpers:
+  - `read_metadata_xml()` -> returns the current metadata XML as a string.
+  - `read_general_document_info()` -> returns available document info as a dict; keys may include `name`, `title`, `user_name`, `description`, `comment`, `keywords`, `rating`, `creation_date_time`. Missing keys were not present in the file.
+  - `read_scaling_info()` -> returns a DTO with optional `scale_x`, `scale_y`, `scale_z` (None when not present).
+  - `read_display_settings()` -> returns a dict mapping channel index to per-channel display settings (may be empty if the file has no display settings).
+  - `read_custom_key_value(key)` -> returns the value for a custom attribute as a native Python type (bool, int, float, str) or None if not found.
+
+### Starting an edit session
+
+Edits are made via a metadata builder returned by the editor. The builder accumulates changes and writes them back on `commit()`.
+
+```python
+with edit_czi(file_path) as editor: builder = editor.create_metadata_builder() # or use auto-commit on success: with editor.edit_session() as builder: ...
+```
+
+- `create_metadata_builder()` initializes the builder from the current file state.
+- `begin_edit()` is an alias for creating a builder.
+- `edit_session()` yields a builder and auto-commits once on successful exit if `can_commit()` returns True.
+
+### Builder operations
+
+The builder provides high-level setters. Fields left as None are ignored; only specified values are applied.
+
+- `get_xml(prettify: bool = False)` -> returns the current builder XML.
+- `set_xml(xml_string)` -> replaces the builder content with the given XML string (must be valid CZI metadata XML).
+- `set_general_document_info(...)` -> updates document info fields. Accepts a DTO and/or keyword arguments:
+  - `name`, `title`, `user_name`, `description`, `comment`, `keywords`, `rating`
+  - Unspecified fields remain unchanged.
+- `set_scaling_info(...)` -> updates pixel size in the existing unit (typically μm). Accepts a DTO and/or keyword args:
+  - `scale_x`, `scale_y`, `scale_z`
+  - Unspecified axes remain unchanged.
+- `set_custom_key_value(key, value)` -> sets or adds a custom attribute. `value` must be bool, int, float, or str.
+- `set_display_settings({channel_index: settings_dto})` -> updates per-channel display settings for provided channels only.
+  - Settings include `is_enabled`, `tinting_mode` (`TintingMode.none` or `TintingMode.Color`), `tinting_color` (`Rgb8Color`), `black_point`, `white_point`.
+  - Optional `name` and `description` can be provided in `ChannelDisplaySettingsDataClassWithNameAndDescription`.
+  - Nonexistent channels are not created by this call.
+- `can_commit()` -> returns True if the builder can commit to the file.
+- `commit()` -> writes all pending changes back to the CZI file.
+
+### Example: update document info and scaling
+
+```python
+from pylibCZIrw.czi import edit_czi, ScalingInfoDto, GeneralDocumentInfoDto
+with edit_czi(file_path) as editor: builder = editor.create_metadata_builder()
+builder.set_general_document_info(
+    info=GeneralDocumentInfoDto(title="New Title"),
+    user_name="EditorUser",
+    comment="Edited by API",
+)
+
+builder.set_scaling_info(scale_x=0.25, scale_y=0.25)  # leave Z unchanged
+
+if builder.can_commit():
+    builder.commit()
+
+# Verify
+info = editor.read_general_document_info()
+scaling = editor.read_scaling_info()
+```
+
+
+### Example: update display settings for an existing channel
+
+```python
+from pylibCZIrw.czi import edit_czi, Rgb8Color, TintingMode, ChannelDisplaySettingsDataClassWithNameAndDescription
+with edit_czi(file_path) as editor: builder = editor.create_metadata_builder()
+ds = ChannelDisplaySettingsDataClassWithNameAndDescription(
+    is_enabled=True,
+    tinting_mode=TintingMode.Color,
+    tinting_color=Rgb8Color(r=255, g=0, b=0),
+    black_point=0.05,
+    white_point=0.95,
+    description="Edited by API",
+)
+
+builder.set_display_settings({0: ds})  # update channel 0 if it exists
+
+if builder.can_commit():
+    builder.commit()
+
+```
+
+Notes
+- Builder setters merge DTO values with explicit keyword arguments; keywords override DTO fields when provided.
+- Unspecified fields are not written, preserving existing metadata.
+- `read_display_settings()` may return an empty map for files without display settings.
+- `read_custom_key_value(key)` returns the current value as a native type when present.
