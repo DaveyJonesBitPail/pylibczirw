@@ -9,9 +9,7 @@ working_dir = os.path.dirname(os.path.abspath(__file__))
 CZI_SIMPLE = os.path.join(working_dir, "../test_data", "c1_gray8.czi")
 CZI_MULTI_CHANNEL = os.path.join(working_dir, "../test_data", "c2_gray8_gray16.czi")
 CZI_MULTI_DIM = os.path.join(working_dir, "../test_data", "c2_gray8_t3_z5_s2.czi")
-CZI_MULTI_SCENE = os.path.join(
-    working_dir, "../test_data", "c1_gray8_s2_overlapping_bounding_boxes.czi"
-)
+CZI_MULTI_SCENE = os.path.join(working_dir, "../test_data", "c1_gray8_s2_overlapping_bounding_boxes.czi")
 
 
 class TestBasicEnumeration:
@@ -22,7 +20,7 @@ class TestBasicEnumeration:
         with open_czi(CZI_SIMPLE) as czi_doc:
             count = {"total": 0}
 
-            def count_callback(index, info):
+            def count_callback(index, info):  # type: ignore
                 count["total"] += 1
                 assert index >= 0
                 assert info.logicalRect.w > 0
@@ -205,9 +203,7 @@ class TestFilteredEnumeration:
                     assert coord_dict.get("C") == target_channel
                     return True
 
-                czi_doc.enumerate_subblocks_subset(
-                    count_filtered, plane=coord_string, only_layer0=True
-                )
+                czi_doc.enumerate_subblocks_subset(count_filtered, plane=coord_string, only_layer0=True)
 
                 assert filtered_count["total"] > 0
 
@@ -232,9 +228,7 @@ class TestFilteredEnumeration:
                     filtered_count["total"] += 1
                     return True
 
-                czi_doc.enumerate_subblocks_subset(
-                    count_filtered, plane=target_coord, only_layer0=False
-                )
+                czi_doc.enumerate_subblocks_subset(count_filtered, plane=target_coord, only_layer0=False)
 
                 assert filtered_count["total"] > 0
 
@@ -279,9 +273,7 @@ class TestFilteredEnumeration:
                 combined_count["total"] += 1
                 return True
 
-            czi_doc.enumerate_subblocks_subset(
-                count_combined, plane={"C": 0}, roi=roi, only_layer0=True
-            )
+            czi_doc.enumerate_subblocks_subset(count_combined, plane={"C": 0}, roi=roi, only_layer0=True)
 
             assert combined_count["total"] >= 0
 
@@ -348,4 +340,4 @@ class TestSceneHandling:
 
             czi_doc.enumerate_subblocks(collect_scenes)
 
-            assert True
+            assert len(scenes_found) > 0

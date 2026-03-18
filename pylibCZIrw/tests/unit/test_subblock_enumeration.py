@@ -49,9 +49,7 @@ def compare_int_size(size1: IntSize, size2: IntSize) -> bool:
         ("C0Z5T2H1", {"C": 0, "Z": 5, "T": 2, "H": 1}),
     ],
 )
-def test_dim_coordinate_from_string(
-    coord_string: str, expected_dict: Dict[str, int]
-) -> None:
+def test_dim_coordinate_from_string(coord_string: str, expected_dict: Dict[str, int]) -> None:
     """Test creating DimCoordinate from coordinate string."""
     coord = create_dim_coordinate_from_string(coord_string)
     result_dict = coord.to_dict()
@@ -68,9 +66,7 @@ def test_dim_coordinate_from_string(
         ({"C": 0, "Z": 5, "T": 2, "H": 1}, {"C": 0, "Z": 5, "T": 2, "H": 1}),
     ],
 )
-def test_dim_coordinate_from_dict(
-    coord_dict: Dict[str, int], expected_dict: Dict[str, int]
-) -> None:
+def test_dim_coordinate_from_dict(coord_dict: Dict[str, int], expected_dict: Dict[str, int]) -> None:
     """Test creating DimCoordinate from dictionary."""
     coord = create_dim_coordinate_from_dict(coord_dict)
     result_dict = coord.to_dict()
@@ -103,9 +99,7 @@ def test_dim_coordinate_try_get_position(
         ({"T": 10}, DimensionIndex.C),
     ],
 )
-def test_dim_coordinate_try_get_position_returns_none(
-    coord_dict: Dict[str, int], dimension: DimensionIndex
-) -> None:
+def test_dim_coordinate_try_get_position_returns_none(coord_dict: Dict[str, int], dimension: DimensionIndex) -> None:
     """Test getting position from DimCoordinate returns None for unset dimensions."""
     coord = create_dim_coordinate_from_dict(coord_dict)
     value = coord.try_get_position(dimension)
@@ -213,9 +207,7 @@ def test_enumerate_subblocks_subset_with_dict_coordinate(mock_reader_class) -> N
     def callback(_index, _info):  # type: ignore
         return True
 
-    reader.enumerate_subblocks_subset(
-        callback, plane={"C": 0, "Z": 5}, only_layer0=True
-    )
+    reader.enumerate_subblocks_subset(callback, plane={"C": 0, "Z": 5}, only_layer0=True)
 
     mock_instance.EnumerateSubset.assert_called_once()
 
@@ -236,9 +228,7 @@ def test_enumerate_subblocks_subset_with_roi(mock_reader_class) -> None:  # type
     def callback(_index, _info):  # type: ignore
         return True
 
-    reader.enumerate_subblocks_subset(
-        callback, roi=(10, 20, 100, 100), only_layer0=False
-    )
+    reader.enumerate_subblocks_subset(callback, roi=(10, 20, 100, 100), only_layer0=False)
 
     mock_instance.EnumerateSubset.assert_called_once()
 
