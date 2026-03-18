@@ -33,10 +33,6 @@ jobs:
           # All available variables are described in documentation
           # https://megalinter.io/configuration/
           VALIDATE_ALL_CODEBASE: true
-          REPOSITORY_GRYPE_PRE_COMMANDS: |
-            [
-              { "command": "grype db update", "cwd": "workspace" }
-            ]
 
       # Upload MegaLinter artifacts
       - name: Archive production artifacts
