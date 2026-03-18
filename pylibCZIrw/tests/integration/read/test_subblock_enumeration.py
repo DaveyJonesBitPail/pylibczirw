@@ -41,7 +41,7 @@ class TestBasicEnumeration:
             count = {"total": 0}
             channels_seen = set()
 
-            def count_callback(index, info):
+            def count_callback(_index, info):  # type: ignore
                 count["total"] += 1
                 coord_dict = info.coordinate.to_dict()
                 if "C" in coord_dict:
@@ -59,7 +59,7 @@ class TestBasicEnumeration:
             count = {"total": 0}
             coordinates_seen = set()
 
-            def count_callback(index, info):
+            def count_callback(_index, info):  # type: ignore
                 count["total"] += 1
                 coord_dict = info.coordinate.to_dict()
                 coord_tuple = tuple(sorted(coord_dict.items()))
@@ -80,7 +80,7 @@ class TestSubBlockInfo:
         with open_czi(CZI_SIMPLE) as czi_doc:
             info_collected = []
 
-            def collect_info(index, info):
+            def collect_info(_index, info):  # type: ignore
                 info_collected.append(info)
                 return len(info_collected) < 5
 
@@ -98,7 +98,7 @@ class TestSubBlockInfo:
         with open_czi(CZI_SIMPLE) as czi_doc:
             info_collected = []
 
-            def collect_info(index, info):
+            def collect_info(_index, info):  # type: ignore
                 info_collected.append(info)
                 return len(info_collected) < 5
 
@@ -114,7 +114,7 @@ class TestSubBlockInfo:
         with open_czi(CZI_SIMPLE) as czi_doc:
             info_collected = []
 
-            def collect_info(index, info):
+            def collect_info(_index, info):  # type: ignore
                 info_collected.append(info)
                 return len(info_collected) < 5
 
@@ -129,7 +129,7 @@ class TestSubBlockInfo:
         with open_czi(CZI_SIMPLE) as czi_doc:
             info_collected = []
 
-            def collect_info(index, info):
+            def collect_info(_index, info):  # type: ignore
                 info_collected.append(info)
                 return len(info_collected) < 5
 
@@ -144,7 +144,7 @@ class TestSubBlockInfo:
         with open_czi(CZI_MULTI_DIM) as czi_doc:
             info_collected = []
 
-            def collect_info(index, info):
+            def collect_info(_index, info):  # type: ignore
                 info_collected.append(info)
                 return len(info_collected) < 10
 
@@ -166,11 +166,11 @@ class TestFilteredEnumeration:
             all_count = {"total": 0}
             layer0_count = {"total": 0}
 
-            def count_all(index, info):
+            def count_all(_index, _info):  # type: ignore
                 all_count["total"] += 1
                 return True
 
-            def count_layer0(index, info):
+            def count_layer0(_index, _info):  # type: ignore
                 layer0_count["total"] += 1
                 return True
 
@@ -185,7 +185,7 @@ class TestFilteredEnumeration:
         with open_czi(CZI_MULTI_CHANNEL) as czi_doc:
             coords_found = set()
 
-            def collect_coords(index, info):
+            def collect_coords(_index, info):  # type: ignore
                 coord_dict = info.coordinate.to_dict()
                 if "C" in coord_dict:
                     coords_found.add(coord_dict["C"])
@@ -199,7 +199,7 @@ class TestFilteredEnumeration:
 
                 filtered_count = {"total": 0}
 
-                def count_filtered(index, info):
+                def count_filtered(_index, info):  # type: ignore
                     filtered_count["total"] += 1
                     coord_dict = info.coordinate.to_dict()
                     assert coord_dict.get("C") == target_channel
@@ -216,7 +216,7 @@ class TestFilteredEnumeration:
         with open_czi(CZI_MULTI_DIM) as czi_doc:
             coords_found = []
 
-            def collect_coords(index, info):
+            def collect_coords(_index, info):  # type: ignore
                 coord_dict = info.coordinate.to_dict()
                 coords_found.append(coord_dict)
                 return len(coords_found) < 20
@@ -228,7 +228,7 @@ class TestFilteredEnumeration:
 
                 filtered_count = {"total": 0}
 
-                def count_filtered(index, info):
+                def count_filtered(_index, _info):  # type: ignore
                     filtered_count["total"] += 1
                     return True
 
@@ -253,7 +253,7 @@ class TestFilteredEnumeration:
 
             filtered_count = {"total": 0}
 
-            def count_in_roi(index, info):
+            def count_in_roi(_index, _info):  # type: ignore
                 filtered_count["total"] += 1
                 return True
 
@@ -275,7 +275,7 @@ class TestFilteredEnumeration:
 
             combined_count = {"total": 0}
 
-            def count_combined(index, info):
+            def count_combined(_index, _info):  # type: ignore
                 combined_count["total"] += 1
                 return True
 
@@ -295,7 +295,7 @@ class TestEnumerationControl:
             max_count = 5
             count = {"total": 0}
 
-            def limited_callback(index, info):
+            def limited_callback(_index, _info):  # type: ignore
                 count["total"] += 1
                 return count["total"] < max_count
 
@@ -308,13 +308,13 @@ class TestEnumerationControl:
         with open_czi(CZI_MULTI_CHANNEL) as czi_doc:
             channel_0_bounds = []
 
-            def collect_channel_0(index, info):
+            def collect_channel_0(_index, info):  # type: ignore
                 coord_dict = info.coordinate.to_dict()
                 if coord_dict.get("C") == 0:
                     rect = info.logicalRect
                     channel_0_bounds.append(
                         {
-                            "index": index,
+                            "index": _index,
                             "x": rect.x,
                             "y": rect.y,
                             "width": rect.w,
@@ -340,7 +340,7 @@ class TestSceneHandling:
         with open_czi(CZI_MULTI_SCENE) as czi_doc:
             scenes_found = set()
 
-            def collect_scenes(index, info):
+            def collect_scenes(_index, info):  # type: ignore
                 coord_dict = info.coordinate.to_dict()
                 if "S" in coord_dict:
                     scenes_found.add(coord_dict["S"])

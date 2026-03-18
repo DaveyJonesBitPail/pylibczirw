@@ -1,16 +1,16 @@
 """Module implementing unit tests for subblock enumeration functionality"""
 
-import pytest
+from typing import Dict
 from unittest import mock
+
+import pytest
 
 # pylint: disable=no-name-in-module
 from _pylibCZIrw import (
     CompressionMode,
     DimCoordinate,
     DimensionIndex,
-    IntRect,
     IntSize,
-    PixelType,
     SubBlockInfo,
 )
 from pylibCZIrw.czi import CziReader, Rectangle
@@ -21,7 +21,7 @@ def create_dim_coordinate_from_string(coord_str: str) -> DimCoordinate:
     return DimCoordinate(coord_str)
 
 
-def create_dim_coordinate_from_dict(coord_dict: dict) -> DimCoordinate:
+def create_dim_coordinate_from_dict(coord_dict: Dict[str, int]) -> DimCoordinate:
     """Creates a DimCoordinate from a dictionary."""
     return DimCoordinate(coord_dict)
 
@@ -49,7 +49,9 @@ def compare_int_size(size1: IntSize, size2: IntSize) -> bool:
         ("C0Z5T2H1", {"C": 0, "Z": 5, "T": 2, "H": 1}),
     ],
 )
-def test_dim_coordinate_from_string(coord_string: str, expected_dict: dict) -> None:
+def test_dim_coordinate_from_string(
+    coord_string: str, expected_dict: Dict[str, int]
+) -> None:
     """Test creating DimCoordinate from coordinate string."""
     coord = create_dim_coordinate_from_string(coord_string)
     result_dict = coord.to_dict()
@@ -66,7 +68,9 @@ def test_dim_coordinate_from_string(coord_string: str, expected_dict: dict) -> N
         ({"C": 0, "Z": 5, "T": 2, "H": 1}, {"C": 0, "Z": 5, "T": 2, "H": 1}),
     ],
 )
-def test_dim_coordinate_from_dict(coord_dict: dict, expected_dict: dict) -> None:
+def test_dim_coordinate_from_dict(
+    coord_dict: Dict[str, int], expected_dict: Dict[str, int]
+) -> None:
     """Test creating DimCoordinate from dictionary."""
     coord = create_dim_coordinate_from_dict(coord_dict)
     result_dict = coord.to_dict()
@@ -83,7 +87,7 @@ def test_dim_coordinate_from_dict(coord_dict: dict, expected_dict: dict) -> None
     ],
 )
 def test_dim_coordinate_try_get_position(
-    coord_dict: dict, dimension: DimensionIndex, expected_value: int
+    coord_dict: Dict[str, int], dimension: DimensionIndex, expected_value: int
 ) -> None:
     """Test getting position from DimCoordinate."""
     coord = create_dim_coordinate_from_dict(coord_dict)
@@ -100,7 +104,7 @@ def test_dim_coordinate_try_get_position(
     ],
 )
 def test_dim_coordinate_try_get_position_returns_none(
-    coord_dict: dict, dimension: DimensionIndex
+    coord_dict: Dict[str, int], dimension: DimensionIndex
 ) -> None:
     """Test getting position from DimCoordinate returns None for unset dimensions."""
     coord = create_dim_coordinate_from_dict(coord_dict)
@@ -151,7 +155,7 @@ def test_subblock_info_structure() -> None:
 
 
 @mock.patch("pylibCZIrw.czi._pylibCZIrw.czi_reader")
-def test_enumerate_subblocks_calls_underlying_method(mock_reader_class) -> None:
+def test_enumerate_subblocks_calls_underlying_method(mock_reader_class) -> None:  # type: ignore
     """Test that enumerate_subblocks calls the underlying C++ method."""
 
     mock_instance = mock.Mock()
@@ -165,7 +169,7 @@ def test_enumerate_subblocks_calls_underlying_method(mock_reader_class) -> None:
 
     callback_called = {"count": 0}
 
-    def callback(index, info):
+    def callback(_index, _info):  # type: ignore
         callback_called["count"] += 1
         return True
 
@@ -175,7 +179,7 @@ def test_enumerate_subblocks_calls_underlying_method(mock_reader_class) -> None:
 
 
 @mock.patch("pylibCZIrw.czi._pylibCZIrw.czi_reader")
-def test_enumerate_subblocks_subset_with_string_coordinate(mock_reader_class) -> None:
+def test_enumerate_subblocks_subset_with_string_coordinate(mock_reader_class) -> None:  # type: ignore
     """Test enumerate_subblocks_subset with string coordinate."""
     mock_instance = mock.Mock()
     mock_reader_class.return_value = mock_instance
@@ -186,7 +190,7 @@ def test_enumerate_subblocks_subset_with_string_coordinate(mock_reader_class) ->
 
     reader = CziReader("test.czi")
 
-    def callback(index, info):
+    def callback(_index, _info):  # type: ignore
         return True
 
     reader.enumerate_subblocks_subset(callback, plane="C0Z5", only_layer0=True)
@@ -195,7 +199,7 @@ def test_enumerate_subblocks_subset_with_string_coordinate(mock_reader_class) ->
 
 
 @mock.patch("pylibCZIrw.czi._pylibCZIrw.czi_reader")
-def test_enumerate_subblocks_subset_with_dict_coordinate(mock_reader_class) -> None:
+def test_enumerate_subblocks_subset_with_dict_coordinate(mock_reader_class) -> None:  # type: ignore
     """Test enumerate_subblocks_subset with dict coordinate."""
     mock_instance = mock.Mock()
     mock_reader_class.return_value = mock_instance
@@ -206,7 +210,7 @@ def test_enumerate_subblocks_subset_with_dict_coordinate(mock_reader_class) -> N
 
     reader = CziReader("test.czi")
 
-    def callback(index, info):
+    def callback(_index, _info):  # type: ignore
         return True
 
     reader.enumerate_subblocks_subset(
@@ -217,7 +221,7 @@ def test_enumerate_subblocks_subset_with_dict_coordinate(mock_reader_class) -> N
 
 
 @mock.patch("pylibCZIrw.czi._pylibCZIrw.czi_reader")
-def test_enumerate_subblocks_subset_with_roi(mock_reader_class) -> None:
+def test_enumerate_subblocks_subset_with_roi(mock_reader_class) -> None:  # type: ignore
     """Test enumerate_subblocks_subset with ROI."""
 
     mock_instance = mock.Mock()
@@ -229,7 +233,7 @@ def test_enumerate_subblocks_subset_with_roi(mock_reader_class) -> None:
 
     reader = CziReader("test.czi")
 
-    def callback(index, info):
+    def callback(_index, _info):  # type: ignore
         return True
 
     reader.enumerate_subblocks_subset(
@@ -240,7 +244,7 @@ def test_enumerate_subblocks_subset_with_roi(mock_reader_class) -> None:
 
 
 @mock.patch("pylibCZIrw.czi._pylibCZIrw.czi_reader")
-def test_enumerate_subblocks_subset_with_all_filters(mock_reader_class) -> None:
+def test_enumerate_subblocks_subset_with_all_filters(mock_reader_class) -> None:  # type: ignore
     """Test enumerate_subblocks_subset with all filter options."""
     mock_instance = mock.Mock()
     mock_reader_class.return_value = mock_instance
@@ -251,7 +255,7 @@ def test_enumerate_subblocks_subset_with_all_filters(mock_reader_class) -> None:
 
     reader = CziReader("test.czi")
 
-    def callback(index, info):
+    def callback(_index, _info):  # type: ignore
         return True
 
     reader.enumerate_subblocks_subset(

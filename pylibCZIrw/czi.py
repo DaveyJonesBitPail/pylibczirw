@@ -197,8 +197,12 @@ class CziReader:
         cache_options:
             The configuration of a subblock cache to be used.
         """
-        libczi_cache_options = self._create_default_cache_options(cache_options=cache_options)
-        libczi_reader_options = self._create_reader_options(reader_options=reader_options)
+        libczi_cache_options = self._create_default_cache_options(
+            cache_options=cache_options
+        )
+        libczi_reader_options = self._create_reader_options(
+            reader_options=reader_options
+        )
 
         if file_input_type is ReaderFileInputTypes.Curl:
             if validators.url(filepath):
@@ -206,7 +210,10 @@ class CziReader:
                 # And therefore also cache uncompressed subblocks.
                 libczi_cache_options.cacheOnlyCompressed = False
                 self._czi_reader = _pylibCZIrw.czi_reader(
-                    ReaderFileInputTypes.Curl.value, filepath, libczi_cache_options, libczi_reader_options
+                    ReaderFileInputTypes.Curl.value,
+                    filepath,
+                    libczi_cache_options,
+                    libczi_reader_options,
                 )
             else:
                 raise FileNotFoundError(f"{filepath} is not a valid URL.")
@@ -215,12 +222,17 @@ class CziReader:
             libczi_cache_options.cacheOnlyCompressed = True
             # use the "standard reader class name" for local files
             self._czi_reader = _pylibCZIrw.czi_reader(
-                ReaderFileInputTypes.Standard.value, filepath, libczi_cache_options, libczi_reader_options
+                ReaderFileInputTypes.Standard.value,
+                filepath,
+                libczi_cache_options,
+                libczi_reader_options,
             )
         self._stats = self._czi_reader.GetSubBlockStats()
 
     @classmethod
-    def _create_default_cache_options(cls, cache_options: Optional[CacheOptions]) -> _pylibCZIrw.SubBlockCacheOptions:
+    def _create_default_cache_options(
+        cls, cache_options: Optional[CacheOptions]
+    ) -> _pylibCZIrw.SubBlockCacheOptions:
         sub_block_cache_options = _pylibCZIrw.SubBlockCacheOptions()
         sub_block_cache_options.Clear()
         if cache_options:
@@ -233,9 +245,13 @@ class CziReader:
             if native_cache_type is not None:
                 sub_block_cache_options.cacheType = native_cache_type
             if cache_options.max_memory_usage is not None:
-                sub_block_cache_options.pruneOptions.maxMemoryUsage = cache_options.max_memory_usage
+                sub_block_cache_options.pruneOptions.maxMemoryUsage = (
+                    cache_options.max_memory_usage
+                )
             if cache_options.max_sub_block_count is not None:
-                sub_block_cache_options.pruneOptions.maxSubBlockCount = cache_options.max_sub_block_count
+                sub_block_cache_options.pruneOptions.maxSubBlockCount = (
+                    cache_options.max_sub_block_count
+                )
         return sub_block_cache_options
 
     def close(self) -> None:
@@ -243,7 +259,9 @@ class CziReader:
         self._czi_reader.close()
 
     @staticmethod
-    def _create_reader_options(reader_options: Optional[ReaderOptions]) -> _pylibCZIrw.ReaderOptions:
+    def _create_reader_options(
+        reader_options: Optional[ReaderOptions],
+    ) -> _pylibCZIrw.ReaderOptions:
         """Creates a ReaderOptions object from the ReaderOptions dataclass.
 
         Parameters
@@ -259,12 +277,18 @@ class CziReader:
         libczi_reader_options = _pylibCZIrw.ReaderOptions()
         libczi_reader_options.Clear()
         if reader_options:
-            libczi_reader_options.enableMaskAwareness = reader_options.enable_mask_awareness
+            libczi_reader_options.enableMaskAwareness = (
+                reader_options.enable_mask_awareness
+            )
             libczi_reader_options.enableVisibilityCheckOptimization = (
                 reader_options.enable_visibility_check_optimization
             )
-            libczi_reader_options.laxSubblockCoordinateChecks = reader_options.lax_subblock_coordinate_checks
-            libczi_reader_options.ignoreSizeMForPyramidSubblocks = reader_options.ignore_sizem_for_pyramid_subblocks
+            libczi_reader_options.laxSubblockCoordinateChecks = (
+                reader_options.lax_subblock_coordinate_checks
+            )
+            libczi_reader_options.ignoreSizeMForPyramidSubblocks = (
+                reader_options.ignore_sizem_for_pyramid_subblocks
+            )
         return libczi_reader_options
 
     @staticmethod
@@ -315,7 +339,9 @@ class CziReader:
 
         # Getting CZI_DIMS size
         for dim, dim_index in self.CZI_DIMS.items():
-            dimension_size = self._czi_reader.GetDimensionSize(_pylibCZIrw.DimensionIndex(dim_index))
+            dimension_size = self._czi_reader.GetDimensionSize(
+                _pylibCZIrw.DimensionIndex(dim_index)
+            )
             if dimension_size > 0:
                 total_bounding_box[dim] = (0, dimension_size)
 
@@ -351,11 +377,15 @@ class CziReader:
 
         # Getting CZI_DIMS size
         for dim, dim_index in self.CZI_DIMS.items():
-            dimension_size = self._czi_reader.GetDimensionSize(_pylibCZIrw.DimensionIndex(dim_index))
+            dimension_size = self._czi_reader.GetDimensionSize(
+                _pylibCZIrw.DimensionIndex(dim_index)
+            )
             if dimension_size > 0:
                 total_bounding_box_layer0[dim] = (0, dimension_size)
         # Getting X Y
-        total_bounding_box_layer0.update(self._compute_index_ranges(self._stats.boundingBoxLayer0Only))
+        total_bounding_box_layer0.update(
+            self._compute_index_ranges(self._stats.boundingBoxLayer0Only)
+        )
 
         return total_bounding_box_layer0
 
@@ -383,7 +413,9 @@ class CziReader:
         """
         scenes_bounding_rectangle = {}
 
-        n_scenes_metadata = self._czi_reader.GetDimensionSize(_pylibCZIrw.DimensionIndex.S)
+        n_scenes_metadata = self._czi_reader.GetDimensionSize(
+            _pylibCZIrw.DimensionIndex.S
+        )
         n_scene_bounding_boxes = len(self._stats.sceneBoundingBoxes)
         if n_scenes_metadata != n_scene_bounding_boxes:
             raise ValueError(
@@ -392,7 +424,9 @@ class CziReader:
             )
 
         for scene_id, scene_bounding_box in self._stats.sceneBoundingBoxes.items():
-            scene_bounding_box_extracted = extract_scene_bounding_box(scene_bounding_box)
+            scene_bounding_box_extracted = extract_scene_bounding_box(
+                scene_bounding_box
+            )
             scenes_bounding_rectangle[scene_id] = Rectangle(
                 scene_bounding_box_extracted.x,
                 scene_bounding_box_extracted.y,
@@ -512,10 +546,13 @@ class CziReader:
         : raises ValueError: If the type of value is not supported, raises an error.
         """
         custom_attribute = None
-        if "CustomAttributes" in self.metadata["ImageDocument"]["Metadata"]["Information"]:
-            custom_attribute_metadata = self.metadata["ImageDocument"]["Metadata"]["Information"]["CustomAttributes"][
-                "KeyValue"
-            ]
+        if (
+            "CustomAttributes"
+            in self.metadata["ImageDocument"]["Metadata"]["Information"]
+        ):
+            custom_attribute_metadata = self.metadata["ImageDocument"]["Metadata"][
+                "Information"
+            ]["CustomAttributes"]["KeyValue"]
             custom_attribute = {}
             for key, value in custom_attribute_metadata.items():
                 if value["@Type"] == "Int32":
@@ -726,7 +763,8 @@ class CziReader:
         return {
             dim: 0
             for dim, dim_index in self.CZI_DIMS.items()
-            if self._czi_reader.GetDimensionSize(_pylibCZIrw.DimensionIndex(dim_index)) > 1
+            if self._czi_reader.GetDimensionSize(_pylibCZIrw.DimensionIndex(dim_index))
+            > 1
         }
 
     def _create_plane_coords(
@@ -814,8 +852,7 @@ class CziReader:
         return self._czi_reader.GetCacheInfo()
 
     def enumerate_subblocks(
-        self,
-        func: Callable[[int, _pylibCZIrw.SubBlockInfo], bool]
+        self, func: Callable[[int, _pylibCZIrw.SubBlockInfo], bool]
     ) -> None:
         """Enumerate all subblocks in the CZI document.
 
@@ -998,7 +1035,9 @@ class CziWriter:
         np.dtype("float32"): _pylibCZIrw.PixelType(8),
     }
 
-    def __init__(self, filepath: str, compression_options: Optional[str] = None) -> None:
+    def __init__(
+        self, filepath: str, compression_options: Optional[str] = None
+    ) -> None:
         """Creates a czi writer object, should only be call through the create_czi() function.
 
         Parameters
@@ -1175,7 +1214,9 @@ class CziWriter:
         if cls._is_rgb(data):
             return _pylibCZIrw.PImage(data, cls.RGB_MAPPING[data.dtype])
         if cls._is_gray(data):
-            return _pylibCZIrw.PImage(cls._format_gray_data(data), cls.GRAY_MAPPING[data.dtype])
+            return _pylibCZIrw.PImage(
+                cls._format_gray_data(data), cls.GRAY_MAPPING[data.dtype]
+            )
         raise ValueError("Incorrect Channel dimension!")
 
     @classmethod
@@ -1234,7 +1275,9 @@ class CziWriter:
             for j in range(num_rows):
                 right = None if i == num_cols - 1 else (width // num_cols) * (i + 1)
                 bottom = None if j == num_rows - 1 else (length // num_rows) * (j + 1)
-                subdata = data[(width // num_cols) * i : right, (length // num_rows) * j : bottom]
+                subdata = data[
+                    (width // num_cols) * i : right, (length // num_rows) * j : bottom
+                ]
                 yield subdata
 
     def write(
@@ -1270,7 +1313,9 @@ class CziWriter:
         data_size = data.nbytes / 1000000
         retiling_id = str(uuid.uuid4())
 
-        subdata_generator = self._divide_data(data) if data_size > 10.0 else (item for item in [data])
+        subdata_generator = (
+            self._divide_data(data) if data_size > 10.0 else (item for item in [data])
+        )
 
         for subarray in subdata_generator:
             m_index = self._get_m_index(plane_libczi)
@@ -1304,7 +1349,9 @@ class CziWriter:
         return True
 
     @staticmethod
-    def _create_customvalue(value: Union[int, float, bool, str]) -> _pylibCZIrw.CustomValueVariant:
+    def _create_customvalue(
+        value: Union[int, float, bool, str],
+    ) -> _pylibCZIrw.CustomValueVariant:
         """Convert the custom attribute value into a CustomValueVariant object
 
         Parameters
@@ -1329,7 +1376,9 @@ class CziWriter:
         elif isinstance(value, str):
             customvalue.stringValue = value
         else:
-            raise ValueError("The type of value could only be boolean, integer, float or string.")
+            raise ValueError(
+                "The type of value could only be boolean, integer, float or string."
+            )
         return customvalue
 
     @staticmethod
@@ -1410,14 +1459,18 @@ class CziWriter:
                 display_settings_key,
                 display_settings_value,
             ) in display_settings.items():
-                display_settings_dict[display_settings_key] = self._create_display_setting(display_settings_value)
+                display_settings_dict[display_settings_key] = (
+                    self._create_display_setting(display_settings_value)
+                )
         custom_attributes_dict = {}
         if custom_attributes:
             for (
                 custom_attributes_key,
                 custom_attributes_value,
             ) in custom_attributes.items():
-                custom_attributes_dict[custom_attributes_key] = self._create_customvalue(custom_attributes_value)
+                custom_attributes_dict[custom_attributes_key] = (
+                    self._create_customvalue(custom_attributes_value)
+                )
         self._czi_writer.WriteMetadata(
             document_name,
             scale_x,
@@ -1454,7 +1507,9 @@ class ScalingInfoDto:
 
 
 @dataclass
-class ChannelDisplaySettingsDataClassWithNameAndDescription(ChannelDisplaySettingsDataClass):
+class ChannelDisplaySettingsDataClassWithNameAndDescription(
+    ChannelDisplaySettingsDataClass
+):
     """ChannelDisplaySettingsDataClassWithNameAndDescription.
 
     Extends channel display settings with optional `name` and `description`.
@@ -1630,11 +1685,17 @@ class CziMetadataBuilder:
             "scale_y": getattr(scaling, "scale_y", None),
             "scale_z": getattr(scaling, "scale_z", None),
         }
-        base.update(self._filter_none({"scale_x": scale_x, "scale_y": scale_y, "scale_z": scale_z}))
+        base.update(
+            self._filter_none(
+                {"scale_x": scale_x, "scale_y": scale_y, "scale_z": scale_z}
+            )
+        )
         args = self._filter_none(base)
         self._native.set_scaling_info(**args)
 
-    def set_custom_key_value(self, key: str, value: Union[int, float, bool, str]) -> None:
+    def set_custom_key_value(
+        self, key: str, value: Union[int, float, bool, str]
+    ) -> None:
         """Forward a Python-native value by constructing a CustomValueVariant."""
         cv = _pylibCZIrw.CustomValueVariant()
         if isinstance(value, bool):
@@ -1653,7 +1714,10 @@ class CziMetadataBuilder:
         self,
         display_settings: Dict[
             int,
-            Union[ChannelDisplaySettingsDataClass, ChannelDisplaySettingsDataClassWithNameAndDescription],
+            Union[
+                ChannelDisplaySettingsDataClass,
+                ChannelDisplaySettingsDataClassWithNameAndDescription,
+            ],
         ],
     ) -> None:
         """Update per-channel display settings.
@@ -1677,7 +1741,10 @@ class CziMetadataBuilder:
         )
 
         def to_pod(
-            ds_py: Union[ChannelDisplaySettingsDataClass, ChannelDisplaySettingsDataClassWithNameAndDescription]
+            ds_py: Union[
+                ChannelDisplaySettingsDataClass,
+                ChannelDisplaySettingsDataClassWithNameAndDescription,
+            ],
         ) -> ChannelDisplaySettingsStructWithNameAndDescription:
             pod = ChannelDisplaySettingsStructWithNameAndDescription()
             pod.Clear()
@@ -1688,7 +1755,9 @@ class CziMetadataBuilder:
             pod.tintingColor.g = ds_py.tinting_color.g
             pod.tintingColor.b = ds_py.tinting_color.b
             pod.tintingMode = (
-                TintingModeEnum.Color if ds_py.tinting_mode == TintingMode.Color else getattr(TintingModeEnum, "None")
+                TintingModeEnum.Color
+                if ds_py.tinting_mode == TintingMode.Color
+                else getattr(TintingModeEnum, "None")
             )
             pod.description = getattr(ds_py, "description", None) or ""
             pod.name = getattr(ds_py, "name", None) or ""
@@ -1785,7 +1854,9 @@ class CziEditor:
             scale_z=native.get("scale_z"),
         )
 
-    def read_display_settings(self) -> Dict[int, ChannelDisplaySettingsDataClassWithNameAndDescription]:
+    def read_display_settings(
+        self,
+    ) -> Dict[int, ChannelDisplaySettingsDataClassWithNameAndDescription]:
         """Return per-channel display settings as DTOs.
 
         Returns
@@ -1804,7 +1875,11 @@ class CziEditor:
         ) -> ChannelDisplaySettingsDataClassWithNameAndDescription:
             # map native tinting-mode enum to Python TintingMode
             tinting_enum_color = _pylibCZIrw.TintingModeEnum.Color
-            tint_mode_py = TintingMode.Color if pod.tintingMode == tinting_enum_color else TintingMode.none
+            tint_mode_py = (
+                TintingMode.Color
+                if pod.tintingMode == tinting_enum_color
+                else TintingMode.none
+            )
             return ChannelDisplaySettingsDataClassWithNameAndDescription(
                 is_enabled=bool(getattr(pod, "isEnabled", False)),
                 tinting_mode=tint_mode_py,
@@ -1816,7 +1891,11 @@ class CziEditor:
                 black_point=float(getattr(pod, "blackPoint", 0.0)),
                 white_point=float(getattr(pod, "whitePoint", 1.0)),
                 name=getattr(pod, "name", None) if hasattr(pod, "name") else None,
-                description=getattr(pod, "description", None) if hasattr(pod, "description") else None,
+                description=(
+                    getattr(pod, "description", None)
+                    if hasattr(pod, "description")
+                    else None
+                ),
             )
 
         return {idx: to_dto(p) for idx, p in native_map.items()}
@@ -1904,7 +1983,12 @@ def open_czi(
      : czi
         CziReader document as a czi object
     """
-    reader = CziReader(filepath, file_input_type, cache_options=cache_options, reader_options=reader_options)
+    reader = CziReader(
+        filepath,
+        file_input_type,
+        cache_options=cache_options,
+        reader_options=reader_options,
+    )
     try:
         yield reader
     finally:
