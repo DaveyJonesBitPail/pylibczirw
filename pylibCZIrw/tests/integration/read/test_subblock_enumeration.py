@@ -1,4 +1,5 @@
 """Module implementing integration tests for subblock enumeration functionality"""
+
 # pylint: disable=no-self-use  # Test methods don't need to use self
 
 import os
