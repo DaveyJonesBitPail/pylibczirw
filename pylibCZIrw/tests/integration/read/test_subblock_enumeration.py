@@ -2,8 +2,6 @@
 
 import os
 
-import pytest
-
 from pylibCZIrw.czi import open_czi
 
 working_dir = os.path.dirname(os.path.abspath(__file__))
@@ -11,7 +9,9 @@ working_dir = os.path.dirname(os.path.abspath(__file__))
 CZI_SIMPLE = os.path.join(working_dir, "../test_data", "c1_gray8.czi")
 CZI_MULTI_CHANNEL = os.path.join(working_dir, "../test_data", "c2_gray8_gray16.czi")
 CZI_MULTI_DIM = os.path.join(working_dir, "../test_data", "c2_gray8_t3_z5_s2.czi")
-CZI_MULTI_SCENE = os.path.join(working_dir, "../test_data", "c1_gray8_s2_overlapping_bounding_boxes.czi")
+CZI_MULTI_SCENE = os.path.join(
+    working_dir, "../test_data", "c1_gray8_s2_overlapping_bounding_boxes.czi"
+)
 
 
 class TestBasicEnumeration:
@@ -32,7 +32,7 @@ class TestBasicEnumeration:
                 return True
 
             czi_doc.enumerate_subblocks(count_callback)
-            
+
             assert count["total"] >= 1
 
     def test_enumerate_all_subblocks_multi_channel(self) -> None:
@@ -49,7 +49,7 @@ class TestBasicEnumeration:
                 return True
 
             czi_doc.enumerate_subblocks(count_callback)
-            
+
             assert count["total"] > 1
             assert len(channels_seen) >= 2
 
@@ -67,7 +67,7 @@ class TestBasicEnumeration:
                 return True
 
             czi_doc.enumerate_subblocks(count_callback)
-            
+
             assert count["total"] > 10
             assert len(coordinates_seen) > 5
 
@@ -85,7 +85,7 @@ class TestSubBlockInfo:
                 return len(info_collected) < 5
 
             czi_doc.enumerate_subblocks(collect_info)
-            
+
             for info in info_collected:
                 assert hasattr(info, "logicalRect")
                 assert info.logicalRect.x is not None
@@ -103,7 +103,7 @@ class TestSubBlockInfo:
                 return len(info_collected) < 5
 
             czi_doc.enumerate_subblocks(collect_info)
-            
+
             for info in info_collected:
                 assert hasattr(info, "physicalSize")
                 assert info.physicalSize.w > 0
@@ -119,7 +119,7 @@ class TestSubBlockInfo:
                 return len(info_collected) < 5
 
             czi_doc.enumerate_subblocks(collect_info)
-            
+
             for info in info_collected:
                 assert hasattr(info, "pixelType")
                 assert hasattr(info.pixelType, "name")
@@ -134,7 +134,7 @@ class TestSubBlockInfo:
                 return len(info_collected) < 5
 
             czi_doc.enumerate_subblocks(collect_info)
-            
+
             for info in info_collected:
                 compression = info.get_compression_mode()
                 assert hasattr(compression, "name")
@@ -149,7 +149,7 @@ class TestSubBlockInfo:
                 return len(info_collected) < 10
 
             czi_doc.enumerate_subblocks(collect_info)
-            
+
             for info in info_collected:
                 assert hasattr(info, "coordinate")
                 coord_dict = info.coordinate.to_dict()
@@ -176,7 +176,7 @@ class TestFilteredEnumeration:
 
             czi_doc.enumerate_subblocks(count_all)
             czi_doc.enumerate_subblocks_subset(count_layer0, only_layer0=True)
-            
+
             assert layer0_count["total"] <= all_count["total"]
             assert layer0_count["total"] > 0
 
@@ -192,11 +192,11 @@ class TestFilteredEnumeration:
                 return True
 
             czi_doc.enumerate_subblocks(collect_coords)
-            
+
             if len(coords_found) > 0:
                 target_channel = min(coords_found)
                 coord_string = f"C{target_channel}"
-                
+
                 filtered_count = {"total": 0}
 
                 def count_filtered(index, info):
@@ -206,11 +206,9 @@ class TestFilteredEnumeration:
                     return True
 
                 czi_doc.enumerate_subblocks_subset(
-                    count_filtered, 
-                    plane=coord_string,
-                    only_layer0=True
+                    count_filtered, plane=coord_string, only_layer0=True
                 )
-                
+
                 assert filtered_count["total"] > 0
 
     def test_enumerate_with_coordinate_filter_dict(self) -> None:
@@ -224,10 +222,10 @@ class TestFilteredEnumeration:
                 return len(coords_found) < 20
 
             czi_doc.enumerate_subblocks(collect_coords)
-            
+
             if len(coords_found) > 0:
                 target_coord = coords_found[0]
-                
+
                 filtered_count = {"total": 0}
 
                 def count_filtered(index, info):
@@ -235,9 +233,7 @@ class TestFilteredEnumeration:
                     return True
 
                 czi_doc.enumerate_subblocks_subset(
-                    count_filtered,
-                    plane=target_coord,
-                    only_layer0=False
+                    count_filtered, plane=target_coord, only_layer0=False
                 )
 
                 assert filtered_count["total"] > 0
@@ -261,11 +257,7 @@ class TestFilteredEnumeration:
                 filtered_count["total"] += 1
                 return True
 
-            czi_doc.enumerate_subblocks_subset(
-                count_in_roi,
-                roi=roi,
-                only_layer0=True
-            )
+            czi_doc.enumerate_subblocks_subset(count_in_roi, roi=roi, only_layer0=True)
 
             assert filtered_count["total"] >= 0
 
@@ -280,7 +272,7 @@ class TestFilteredEnumeration:
                 (bounds["X"][1] - bounds["X"][0]),
                 (bounds["Y"][1] - bounds["Y"][0]),
             )
-            
+
             combined_count = {"total": 0}
 
             def count_combined(index, info):
@@ -288,10 +280,7 @@ class TestFilteredEnumeration:
                 return True
 
             czi_doc.enumerate_subblocks_subset(
-                count_combined,
-                plane={"C": 0},
-                roi=roi,
-                only_layer0=True
+                count_combined, plane={"C": 0}, roi=roi, only_layer0=True
             )
 
             assert combined_count["total"] >= 0
@@ -323,13 +312,15 @@ class TestEnumerationControl:
                 coord_dict = info.coordinate.to_dict()
                 if coord_dict.get("C") == 0:
                     rect = info.logicalRect
-                    channel_0_bounds.append({
-                        "index": index,
-                        "x": rect.x,
-                        "y": rect.y,
-                        "width": rect.w,
-                        "height": rect.h,
-                    })
+                    channel_0_bounds.append(
+                        {
+                            "index": index,
+                            "x": rect.x,
+                            "y": rect.y,
+                            "width": rect.w,
+                            "height": rect.h,
+                        }
+                    )
                 return True
 
             czi_doc.enumerate_subblocks(collect_channel_0)

@@ -164,6 +164,7 @@ def test_enumerate_subblocks_calls_underlying_method(mock_reader_class) -> None:
     reader = CziReader("test.czi")
 
     callback_called = {"count": 0}
+
     def callback(index, info):
         callback_called["count"] += 1
         return True
@@ -209,9 +210,7 @@ def test_enumerate_subblocks_subset_with_dict_coordinate(mock_reader_class) -> N
         return True
 
     reader.enumerate_subblocks_subset(
-        callback, 
-        plane={"C": 0, "Z": 5}, 
-        only_layer0=True
+        callback, plane={"C": 0, "Z": 5}, only_layer0=True
     )
 
     mock_instance.EnumerateSubset.assert_called_once()
@@ -234,9 +233,7 @@ def test_enumerate_subblocks_subset_with_roi(mock_reader_class) -> None:
         return True
 
     reader.enumerate_subblocks_subset(
-        callback, 
-        roi=(10, 20, 100, 100),
-        only_layer0=False
+        callback, roi=(10, 20, 100, 100), only_layer0=False
     )
 
     mock_instance.EnumerateSubset.assert_called_once()
@@ -261,7 +258,7 @@ def test_enumerate_subblocks_subset_with_all_filters(mock_reader_class) -> None:
         callback,
         plane={"C": 0, "Z": 5, "T": 2},
         roi=Rectangle(10, 20, 100, 100),
-        only_layer0=True
+        only_layer0=True,
     )
 
     mock_instance.EnumerateSubset.assert_called_once()
