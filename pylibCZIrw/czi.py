@@ -813,6 +813,99 @@ class CziReader:
         """
         return self._czi_reader.GetCacheInfo()
 
+    def enumerate_subblocks(
+        self,
+        func: Callable[[int, _pylibCZIrw.SubBlockInfo], bool]
+    ) -> None:
+        """Enumerate all subblocks in the CZI document.
+
+        This method provides access to subblock header information without loading pixel data.
+        For each subblock, the provided function is called with the subblock index and its
+        SubBlockInfo containing metadata like coordinates, bounds, pixel type, and compression.
+
+        Parameters
+        ----------
+        func : Callable[[int, _pylibCZIrw.SubBlockInfo], bool]
+            A function that will be called for each subblock. It receives:
+            - index (int): The subblock index
+            - info (_pylibCZIrw.SubBlockInfo): Subblock header information
+            Returns True to continue enumeration, False to stop.
+
+        Examples
+        --------
+        >>> def print_subblock(index, info):
+        ...     print(f"Subblock {index}: {info.logicalRect}")
+        ...     return True  # continue enumeration
+        >>> czi_doc.enumerate_subblocks(print_subblock)
+        """
+        self._czi_reader.EnumerateSubBlocks(func)
+
+    def enumerate_subblocks_subset(
+        self,
+        func: Callable[[int, _pylibCZIrw.SubBlockInfo], bool],
+        plane: Optional[Union[str, Dict[str, int]]] = None,
+        roi: Optional[Union[Tuple[int, int, int, int], Rectangle]] = None,
+        only_layer0: bool = False,
+    ) -> None:
+        """Enumerate a filtered subset of subblocks.
+
+        This method allows filtering subblocks by plane coordinates, region of interest,
+        and/or pyramid layer. Only subblock header information is accessed, not pixel data.
+
+        Parameters
+        ----------
+        func : Callable[[int, _pylibCZIrw.SubBlockInfo], bool]
+            A function called for each matching subblock. It receives:
+            - index (int): The subblock index
+            - info (_pylibCZIrw.SubBlockInfo): Subblock header information
+            Returns True to continue enumeration, False to stop.
+        plane : Optional[Union[str, Dict[str, int]]]
+            Optional plane coordinate filter. Can be:
+            - A coordinate string like "C0Z5T2"
+            - A dictionary like {"C": 0, "Z": 5, "T": 2}
+            - None for no coordinate filtering
+        roi : Optional[Union[Tuple[int, int, int, int], Rectangle]]
+            Optional region of interest. Only subblocks intersecting this ROI are enumerated.
+            Specified as (x, y, width, height) tuple or Rectangle.
+        only_layer0 : bool
+            If True, only pyramid layer 0 subblocks are enumerated (default: False).
+
+        Examples
+        --------
+        >>> # Enumerate all layer0 subblocks in channel 0, Z-slice 5
+        >>> def print_bounds(index, info):
+        ...     rect = info.logicalRect
+        ...     print(f"Subblock {index}: ({rect.x}, {rect.y}, {rect.w}, {rect.h})")
+        ...     return True
+        >>> czi_doc.enumerate_subblocks_subset(
+        ...     print_bounds,
+        ...     plane={"C": 0, "Z": 5},
+        ...     only_layer0=True
+        ... )
+
+        >>> # Enumerate using coordinate string
+        >>> czi_doc.enumerate_subblocks_subset(
+        ...     print_bounds,
+        ...     plane="C0Z5T0"
+        ... )
+        """
+        plane_coord = None
+        if plane is not None:
+            if isinstance(plane, str):
+                plane_coord = _pylibCZIrw.DimCoordinate(plane)
+            elif isinstance(plane, dict):
+                plane_coord = _pylibCZIrw.DimCoordinate(plane)
+            else:
+                plane_coord = plane
+
+        roi_rect = None
+        if roi is not None:
+            if not isinstance(roi, Rectangle):
+                roi = Rectangle(*roi)
+            roi_rect = self._format_roi(roi)
+
+        self._czi_reader.EnumerateSubset(plane_coord, roi_rect, only_layer0, func)
+
     def read(
         self,
         roi: Optional[Union[Tuple[int, int, int, int], Rectangle]] = None,
